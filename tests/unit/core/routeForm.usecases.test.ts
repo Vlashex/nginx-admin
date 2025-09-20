@@ -3,7 +3,7 @@ import {
   validateForm,
   validateLocation,
   createLocation,
-} from "@/shared/lib/core/useCases/routeForm";
+} from "@/core/useCases/routeForm";
 
 describe("RouteFormUseCases.validateForm", () => {
   it("detects validation errors for domain/port/root", () => {

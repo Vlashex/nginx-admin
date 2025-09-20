@@ -3,9 +3,9 @@ import {
   createRoute,
   updateRoute,
   toggleRouteStatus,
-} from "@/shared/lib/core/useCases/routes";
-import type { Route } from "@/shared/lib/core/entities/types";
-import type { RouteRepository } from "@/shared/lib/core/repositories/RouteRepository";
+} from "@/core/useCases/routes";
+import type { Route } from "@/core/entities/types";
+import type { RouteRepository } from "@/core/repositories/RouteRepository";
 
 const makeRepo = () => {
   const memory = new Map<string, Route>();

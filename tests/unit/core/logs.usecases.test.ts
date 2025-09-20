@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { LogUseCases } from "@/shared/lib/core/useCases/logs";
-import type { LogEntry } from "@/shared/lib/core/entities/types";
+import { LogUseCases } from "@/core/useCases/logs";
+import type { LogEntry } from "@/core/entities/types";
 
 const sampleLogs = (): LogEntry[] => {
   const baseTime = new Date("2024-01-01T00:00:00Z").getTime();
