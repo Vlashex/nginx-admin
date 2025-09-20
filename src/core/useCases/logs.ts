@@ -1,5 +1,5 @@
 // core/useCases/logs.ts
-import type { LogEntry, LogFilters } from "@/shared/lib/core/entities/types";
+import type { LogEntry, LogFilters } from "@/core/entities/types";
 
 export class LogUseCases {
   static filterLogs(logs: LogEntry[], filters: LogFilters): LogEntry[] {

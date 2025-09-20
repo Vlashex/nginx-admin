@@ -1,10 +1,5 @@
 // core/utils/validators.ts
-import type {
-  Domain,
-  Port,
-  UnixPath,
-  URLPath,
-} from "@/shared/lib/core/entities/types";
+import type { Domain, Port, UnixPath, URLPath } from "@/core/entities/types";
 
 export const validateDomain = (domain: string): domain is Domain =>
   /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/.test(domain);

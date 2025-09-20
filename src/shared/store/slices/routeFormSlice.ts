@@ -5,7 +5,7 @@ import {
   validateForm,
   //   validateLocation,
   createLocation,
-} from "@/shared/lib/core/useCases/routeForm";
+} from "@/core/useCases/routeForm";
 import type {
   Route,
   LocationConfig,
@@ -15,7 +15,7 @@ import type {
   SizeUnit,
   TimeUnit,
   URLPath,
-} from "@/shared/lib/core/entities/types";
+} from "@/core/entities/types";
 
 interface RouteFormState {
   isEditing: boolean;

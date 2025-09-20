@@ -6,7 +6,7 @@ import {
   useRouteFormStore,
 } from "@/shared/store/slices";
 import "@/processes/integrations/storeIntegrations";
-import { generateConfigPreview } from "@/shared/lib/core/services/ConfigGenerator";
+import { generateConfigPreview } from "@/core/services/ConfigGenerator";
 
 // Expose core API early at module scope so it's available before React renders
 // @ts-expect-error test harness global

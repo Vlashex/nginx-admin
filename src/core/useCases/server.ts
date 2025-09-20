@@ -1,5 +1,5 @@
 // core/useCases/server.ts
-import type { ServerState } from "@/shared/lib/core/entities/types";
+import type { ServerState } from "@/core/entities/types";
 
 export class ServerUseCases {
   static toggleStatus(

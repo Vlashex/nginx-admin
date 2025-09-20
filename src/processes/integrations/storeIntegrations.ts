@@ -5,7 +5,7 @@ import {
   useRoutesStore,
   useRouteFormStore,
 } from "@/shared/store/slices";
-import { IntegrationService } from "@/shared/lib/core/services/IntegrationService";
+import { IntegrationService } from "@/core/services/IntegrationService";
 
 // Подписка на изменения статуса сервера для логирования
 useServerStore.subscribe((state, prevState) => {

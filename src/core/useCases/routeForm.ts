@@ -1,15 +1,11 @@
 // core/useCases/routeForm.ts
-import type {
-  Route,
-  LocationConfig,
-  URLPath,
-} from "@/shared/lib/core/entities/types";
+import type { Route, LocationConfig, URLPath } from "@/core/entities/types";
 import {
   validateDomain,
   validatePort,
   validateUnixPath,
   validateURLPath,
-} from "@/shared/lib/core/utils/validators";
+} from "@/core/utils/validators";
 
 export const validateForm = (
   formData: Partial<Route>

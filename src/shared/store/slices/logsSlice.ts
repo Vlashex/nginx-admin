@@ -1,8 +1,8 @@
 // store/slices/logsSlice.ts
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import { LogUseCases } from "@/shared/lib/core/useCases/logs";
-import type { LogEntry, LogFilters } from "@/shared/lib/core/entities/types";
+import { LogUseCases } from "@/core/useCases/logs";
+import type { LogEntry, LogFilters } from "@/core/entities/types";
 
 interface LogsState {
   logs: LogEntry[];

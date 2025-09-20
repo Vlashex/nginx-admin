@@ -1,11 +1,11 @@
 // core/useCases/routes.ts
-import type { Route } from "@/shared/lib/core/entities/types";
-import type { RouteRepository } from "@/shared/lib/core/repositories/RouteRepository";
+import type { Route } from "@/core/entities/types";
+import type { RouteRepository } from "@/core/repositories/RouteRepository";
 import {
   validateDomain,
   validatePort,
   validateUnixPath,
-} from "@/shared/lib/core/utils/validators";
+} from "@/core/utils/validators";
 
 export const createRoute = async (
   repository: RouteRepository,

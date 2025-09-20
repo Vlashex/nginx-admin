@@ -1,6 +1,6 @@
 // store/adapters/RouteRepositoryAdapter.ts
-import type { RouteRepository } from "@/shared/lib/core/repositories/RouteRepository";
-import type { Route } from "@/shared/lib/core/entities/types";
+import type { RouteRepository } from "@/core/repositories/RouteRepository";
+import type { Route } from "@/core/entities/types";
 
 interface State {
   routes: Map<string, Route>;

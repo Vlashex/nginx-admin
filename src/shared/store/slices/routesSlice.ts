@@ -5,10 +5,10 @@ import {
   createRoute,
   updateRoute,
   toggleRouteStatus,
-} from "@/shared/lib/core/useCases/routes";
-import type { RouteRepository } from "@/shared/lib/core/repositories/RouteRepository";
-import type { Route } from "@/shared/lib/core/entities/types";
-import { LocalStorageRouteRepository } from "@/shared/lib/core/repositories/LocalStorageRouteRepository";
+} from "@/core/useCases/routes";
+import type { RouteRepository } from "@/core/repositories/RouteRepository";
+import type { Route } from "@/core/entities/types";
+import { LocalStorageRouteRepository } from "@/core/repositories/LocalStorageRouteRepository";
 
 interface RoutesState {
   routes: Map<string, Route>;

@@ -1,5 +1,5 @@
 // core/repositories/RouteRepository.ts
-import type { Route } from "@/shared/lib/core/entities/types";
+import type { Route } from "@/core/entities/types";
 
 export interface RouteRepository {
   save(route: Route): Promise<void>;

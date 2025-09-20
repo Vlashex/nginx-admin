@@ -1,11 +1,8 @@
 // store/slices/serverSlice.ts
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import { ServerUseCases } from "@/shared/lib/core/useCases/server";
-import type {
-  ServerState,
-  ServerStatus,
-} from "@/shared/lib/core/entities/types";
+import { ServerUseCases } from "@/core/useCases/server";
+import type { ServerState, ServerStatus } from "@/core/entities/types";
 
 interface ServerActions {
   toggleStatus: (status?: ServerStatus) => void;

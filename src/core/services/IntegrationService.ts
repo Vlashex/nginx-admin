@@ -4,7 +4,7 @@ import type {
   LogLevel,
   LogSource,
   Route,
-} from "@/shared/lib/core/entities/types";
+} from "@/core/entities/types";
 
 export interface LogEntryData {
   timestamp: Date;

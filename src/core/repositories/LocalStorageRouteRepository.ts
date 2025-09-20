@@ -1,6 +1,6 @@
 // infrastructure/repositories/LocalStorageRouteRepository.ts
-import type { RouteRepository } from "@/shared/lib/core/repositories/RouteRepository";
-import type { Route } from "@/shared/lib/core/entities/types";
+import type { RouteRepository } from "@/core/repositories/RouteRepository";
+import type { Route } from "@/core/entities/types";
 
 export class LocalStorageRouteRepository implements RouteRepository {
   private readonly key = "nginx_routes";

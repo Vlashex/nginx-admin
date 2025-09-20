@@ -1,5 +1,5 @@
 // core/services/ConfigGenerator.ts
-import type { Route } from "@/shared/lib/core/entities/types";
+import type { Route } from "@/core/entities/types";
 
 export const generateConfigPreview = (route: Route): string => {
   const { domain, port, root, ssl, locations, advanced } = route;

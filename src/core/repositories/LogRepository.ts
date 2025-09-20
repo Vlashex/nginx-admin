@@ -1,5 +1,5 @@
 // core/repositories/LogRepository.ts
-import type { LogEntry, LogFilters } from "@/shared/lib/core/entities/types";
+import type { LogEntry, LogFilters } from "@/core/entities/types";
 
 export interface LogRepository {
   findAll(filters?: LogFilters): Promise<LogEntry[]>;
