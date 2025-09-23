@@ -47,3 +47,28 @@ export const createLocation = (
     ...locationData,
   } as LocationConfig;
 };
+
+// Locations management helpers
+export function addLocationToRoute(
+  locations: LocationConfig[],
+  location: LocationConfig
+): LocationConfig[] {
+  return [...locations, location];
+}
+
+export function updateLocationInRoute(
+  locations: LocationConfig[],
+  index: number,
+  location: LocationConfig
+): LocationConfig[] {
+  const next = [...locations];
+  next[index] = location;
+  return next;
+}
+
+export function removeLocation(
+  locations: LocationConfig[],
+  index: number
+): LocationConfig[] {
+  return locations.filter((_, i) => i !== index);
+}

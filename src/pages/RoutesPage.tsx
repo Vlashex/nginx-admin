@@ -1,12 +1,24 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback } from "react";
 import { useRoutesStore } from "@/shared/store/slices/routesSlice";
 import { generateConfigPreview } from "@/core/services/ConfigGenerator";
 import { useForm } from "react-hook-form";
 import {
-  validateForm,
   validateLocation,
   createLocation,
+  addLocationToRoute,
+  updateLocationInRoute,
+  removeLocation,
 } from "@/core/useCases/routeForm";
+import { toggleRouteStatus as toggleStatusUC } from "@/core/useCases/routes";
+import { useRoutesRepository } from "@/shared/store/repositoryHooks";
+import {
+  createRouteDefaults,
+  routeFormResolver,
+  type RouteFormValues,
+  type LocationFormValues,
+} from "@/shared/lib/formAdapters";
+import { useRouteOperations } from "@/processes/useRouteOperations";
+import { useRouteFormStore } from "@/shared/store/useRouteFormStore";
 import {
   Form,
   FormControl,
@@ -17,148 +29,51 @@ import {
 } from "@/shared/ui-kit/form";
 import { Input } from "@/shared/ui-kit/input";
 import { Button } from "@/shared/ui-kit/button";
-
-type FormMode = "create" | "edit";
-
-type RouteFormValues = {
-  id?: string;
-  domain: string;
-  port: number;
-  root: string;
-  enabled: boolean;
-  ssl: boolean;
-  ssl_certificate?: string;
-  ssl_certificate_key?: string;
-  proxy_pass?: string;
-  locations: LocationFormValues[];
-  advanced: {
-    client_max_body_size: string;
-    keepalive_timeout: string;
-    gzip: boolean;
-    gzip_types: string;
-    caching: boolean;
-    cache_valid: string;
-  };
-};
-type LocationFormValues = {
-  path: string;
-  proxy_pass?: string;
-  try_files?: string;
-  index?: string;
-  extra_directives?: string;
-};
-
-function createRouteDefaults(): RouteFormValues {
-  return {
-    domain: "" as any,
-    port: 80 as any,
-    root: "" as any,
-    enabled: true,
-    ssl: false,
-    ssl_certificate: "",
-    ssl_certificate_key: "",
-    proxy_pass: "",
-    locations: [],
-    advanced: {
-      client_max_body_size: "1m",
-      keepalive_timeout: "65s",
-      gzip: false,
-      gzip_types: "",
-      caching: false,
-      cache_valid: "",
-    },
-  } as RouteFormValues;
-}
-
-function useRoutesList() {
-  const { routes, isLoading, error, loadRoutes } = useRoutesStore();
-
-  useEffect(() => {
-    loadRoutes();
-  }, [loadRoutes]);
-
-  const list = useMemo(() => Array.from(routes.values()), [routes]);
-  return { list, isLoading, error };
-}
+import { useRoutesList } from "@/processes/useRoutesList";
 
 export default function RoutesPage() {
   const { list, isLoading, error } = useRoutesList();
-  const {
-    addRoute,
-    updateRoute: updateRouteUseCase,
-    deleteRoute,
-    toggleRouteStatus,
-  } = useRoutesStore();
-
-  const [modalOpen, setModalOpen] = useState(false);
-  const [mode, setMode] = useState<FormMode>("create");
-  const [activeTab, setActiveTab] = useState<
-    "basic" | "locations" | "advanced" | "preview"
-  >("basic");
-  const [opState, setOpState] = useState<{
-    loading: boolean;
-    error: string | null;
-    success: string | null;
-  }>({ loading: false, error: null, success: null });
-  const [locationEditing, setLocationEditing] = useState<{
-    index: number | null;
-    value: LocationFormValues | null;
-  }>({ index: null, value: null });
+  const { deleteRoute } = useRoutesStore();
+  const repo = useRoutesRepository();
+  const ops = useRouteOperations(repo);
+  const ui = useRouteFormStore();
 
   const form = useForm<RouteFormValues>({
-    resolver: async (values) => {
-      const errors = validateForm(values as any);
-      const rhfErrors: Record<string, { type: string; message: string }> = {};
-      Object.entries(errors).forEach(([k, v]) => {
-        rhfErrors[k] = { type: "manual", message: v };
-      });
-      return { values, errors: rhfErrors } as any;
-    },
+    resolver: routeFormResolver as any,
     defaultValues: createRouteDefaults(),
   });
 
   const openForCreate = useCallback(() => {
-    setMode("create");
-    setActiveTab("basic");
-    form.reset();
-    setModalOpen(true);
-  }, [form]);
+    ui.openForCreate();
+    form.reset(createRouteDefaults());
+  }, [form, ui]);
 
   const openForEdit = useCallback(
     (route: RouteFormValues) => {
-      setMode("edit");
-      setActiveTab("basic");
+      ui.openForEdit(null);
       form.reset(route);
-      setModalOpen(true);
     },
-    [form]
+    [form, ui]
   );
 
   const closeModal = useCallback(() => {
-    setModalOpen(false);
-    setOpState({ loading: false, error: null, success: null });
-    setLocationEditing({ index: null, value: null });
-  }, []);
+    ui.closeModal();
+    ops.setSuccess(null);
+    ops.setError(null);
+  }, [ops, ui]);
 
   const onSubmit = form.handleSubmit(async (values) => {
-    setOpState({ loading: true, error: null, success: null });
     try {
-      if (mode === "create" || !values.id) {
+      if (ui.mode === "create" || !values.id) {
         const { id: _ignored, metadata: _m, ...data } = values as any;
-        await addRoute(data as any);
-        setOpState({ loading: false, error: null, success: "Сохранено" });
+        await ops.create(data as any);
       } else {
         const { id, ...rest } = values as any;
-        await updateRouteUseCase(id, rest);
-        setOpState({ loading: false, error: null, success: "Обновлено" });
+        await ops.update(id, rest);
       }
       closeModal();
     } catch (e) {
-      setOpState({
-        loading: false,
-        error: (e as Error).message,
-        success: null,
-      });
+      // state already captured in ops
     }
   });
 
@@ -171,23 +86,21 @@ export default function RoutesPage() {
       index: loc.index as any,
       extra_directives: loc.extra_directives as any,
     };
-    setLocationEditing({ index: null, value: uiLoc });
-  }, []);
+    ui.startEditLocation(null, uiLoc);
+  }, [ui]);
 
   const editLocation = useCallback(
     (index: number, value: LocationFormValues) => {
-      setLocationEditing({ index, value });
+      ui.startEditLocation(index, value);
     },
-    []
+    [ui]
   );
 
   const deleteLocation = useCallback(
     (index: number) => {
-      const current = form.getValues("locations");
-      form.setValue(
-        "locations",
-        current.filter((_, i) => i !== index)
-      );
+      const current = form.getValues("locations") as any[];
+      const next = removeLocation(current as any, index) as any;
+      form.setValue("locations", next);
     },
     [form]
   );
@@ -196,18 +109,21 @@ export default function RoutesPage() {
     (value: LocationFormValues) => {
       const errors = validateLocation(value as any);
       if (Object.keys(errors).length > 0) {
-        return; // Do not save if invalid; UI messages are shown per field
+        return;
       }
-      const current = [...form.getValues("locations")];
-      if (locationEditing.index === null) {
-        current.push(value);
-      } else {
-        current[locationEditing.index] = value;
-      }
-      form.setValue("locations", current);
-      setLocationEditing({ index: null, value: null });
+      const current = form.getValues("locations") as any[];
+      const next =
+        ui.locationEditing.index === null
+          ? (addLocationToRoute(current as any, value as any) as any)
+          : (updateLocationInRoute(
+              current as any,
+              ui.locationEditing.index!,
+              value as any
+            ) as any);
+      form.setValue("locations", next);
+      ui.startEditLocation(null, null);
     },
-    [form, locationEditing.index]
+    [form, ui]
   );
 
   return (
@@ -251,7 +167,7 @@ export default function RoutesPage() {
                   </td>
                   <td className="px-6 py-4 space-x-2">
                     <button
-                      onClick={() => toggleRouteStatus(route.id)}
+                      onClick={() => toggleStatusUC(repo, route.id)}
                       className="text-yellow-400 hover:text-yellow-200"
                     >
                       {route.enabled ? "Отключить" : "Включить"}
@@ -276,11 +192,11 @@ export default function RoutesPage() {
         )}
       </div>
 
-      {modalOpen && (
+      {ui.modalOpen && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
           <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full mx-auto p-6 max-h-screen overflow-y-auto">
             <h3 className="text-xl font-semibold mb-4">
-              {mode === "edit"
+              {ui.mode === "edit"
                 ? "Редактирование маршрута"
                 : "Добавление маршрута"}
             </h3>
@@ -290,9 +206,9 @@ export default function RoutesPage() {
                 {["basic", "locations", "advanced", "preview"].map((tab) => (
                   <button
                     key={tab}
-                    onClick={() => setActiveTab(tab as any)}
+                    onClick={() => ui.setActiveTab(tab as any)}
                     className={`mr-8 py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === tab
+                      ui.activeTab === tab
                         ? "border-blue-500 text-blue-600"
                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                     }`}
@@ -308,7 +224,7 @@ export default function RoutesPage() {
 
             <Form {...form}>
               <form onSubmit={onSubmit} className="space-y-4">
-                {activeTab === "basic" && (
+                {ui.activeTab === "basic" && (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
@@ -436,7 +352,7 @@ export default function RoutesPage() {
                   </>
                 )}
 
-                {activeTab === "locations" && (
+                {ui.activeTab === "locations" && (
                   <div>
                     <div className="flex justify-between items-center mb-4">
                       <h4 className="text-lg font-medium">Location блоки</h4>
@@ -490,7 +406,7 @@ export default function RoutesPage() {
                   </div>
                 )}
 
-                {activeTab === "advanced" && (
+                {ui.activeTab === "advanced" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -579,7 +495,7 @@ export default function RoutesPage() {
                   </div>
                 )}
 
-                {activeTab === "preview" && (
+                {ui.activeTab === "preview" && (
                   <div>
                     <h4 className="text-lg font-medium mb-2">
                       Предпросмотр конфигурации
@@ -615,8 +531,8 @@ export default function RoutesPage() {
                   >
                     Отмена
                   </button>
-                  <Button type="submit" disabled={opState.loading}>
-                    {mode === "edit" ? "Сохранить" : "Добавить"}
+                  <Button type="submit" disabled={ops.loading}>
+                    {ui.mode === "edit" ? "Сохранить" : "Добавить"}
                   </Button>
                 </div>
               </form>
@@ -625,7 +541,7 @@ export default function RoutesPage() {
         </div>
       )}
 
-      {locationEditing.value && (
+      {ui.locationEditing.value && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
           <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-auto p-6">
             <h3 className="text-xl font-semibold mb-4">
@@ -637,12 +553,12 @@ export default function RoutesPage() {
                   Путь
                 </label>
                 <Input
-                  value={locationEditing.value.path}
+                  value={ui.locationEditing.value.path}
                   onChange={(e) =>
-                    setLocationEditing((s) => ({
-                      ...s,
-                      value: { ...s.value!, path: e.target.value },
-                    }))
+                    ui.startEditLocation(ui.locationEditing.index, {
+                      ...ui.locationEditing.value!,
+                      path: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -651,12 +567,12 @@ export default function RoutesPage() {
                   Прокси-адрес (опционально)
                 </label>
                 <Input
-                  value={locationEditing.value.proxy_pass || ""}
+                  value={ui.locationEditing.value.proxy_pass || ""}
                   onChange={(e) =>
-                    setLocationEditing((s) => ({
-                      ...s,
-                      value: { ...s.value!, proxy_pass: e.target.value },
-                    }))
+                    ui.startEditLocation(ui.locationEditing.index, {
+                      ...ui.locationEditing.value!,
+                      proxy_pass: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -665,12 +581,12 @@ export default function RoutesPage() {
                   Try Files (опционально)
                 </label>
                 <Input
-                  value={locationEditing.value.try_files || ""}
+                  value={ui.locationEditing.value.try_files || ""}
                   onChange={(e) =>
-                    setLocationEditing((s) => ({
-                      ...s,
-                      value: { ...s.value!, try_files: e.target.value },
-                    }))
+                    ui.startEditLocation(ui.locationEditing.index, {
+                      ...ui.locationEditing.value!,
+                      try_files: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -679,12 +595,12 @@ export default function RoutesPage() {
                   Index файлы (опционально)
                 </label>
                 <Input
-                  value={locationEditing.value.index || ""}
+                  value={ui.locationEditing.value.index || ""}
                   onChange={(e) =>
-                    setLocationEditing((s) => ({
-                      ...s,
-                      value: { ...s.value!, index: e.target.value },
-                    }))
+                    ui.startEditLocation(ui.locationEditing.index, {
+                      ...ui.locationEditing.value!,
+                      index: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -694,24 +610,24 @@ export default function RoutesPage() {
                 </label>
                 <textarea
                   className="w-full h-20 p-2 border rounded-md font-mono text-sm"
-                  value={locationEditing.value.extra_directives || ""}
+                  value={ui.locationEditing.value.extra_directives || ""}
                   onChange={(e) =>
-                    setLocationEditing((s) => ({
-                      ...s,
-                      value: { ...s.value!, extra_directives: e.target.value },
-                    }))
+                    ui.startEditLocation(ui.locationEditing.index, {
+                      ...ui.locationEditing.value!,
+                      extra_directives: e.target.value,
+                    })
                   }
                 />
               </div>
             </div>
             <div className="flex justify-end mt-6 space-x-3">
               <button
-                onClick={() => setLocationEditing({ index: null, value: null })}
+                onClick={() => ui.startEditLocation(null, null)}
                 className="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300"
               >
                 Отмена
               </button>
-              <Button onClick={() => saveLocation(locationEditing.value!)}>
+              <Button onClick={() => saveLocation(ui.locationEditing.value!)}>
                 Сохранить
               </Button>
             </div>
