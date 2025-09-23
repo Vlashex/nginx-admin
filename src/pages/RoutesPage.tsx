@@ -27,6 +27,7 @@ import {
 import { Input } from "@/shared/ui-kit/input";
 import { Button } from "@/shared/ui-kit/button";
 import { useRoutesList } from "@/processes/useRoutesList";
+import type { URLPath } from "@/core/entities/types";
 
 export default function RoutesPage() {
   const { list, isLoading, error } = useRoutesList();
@@ -74,7 +75,8 @@ export default function RoutesPage() {
   });
 
   const addLocation = useCallback(() => {
-    const loc = createLocation({ path: "/" as any });
+    const loc = createLocation({ path: "/" as URLPath });
+    console.log(loc);
     const uiLoc: LocationFormValues = {
       path: (loc.path as unknown as string) || "/",
       proxy_pass: "",
@@ -82,11 +84,13 @@ export default function RoutesPage() {
       index: loc.index as any,
       extra_directives: loc.extra_directives as any,
     };
+    console.log(uiLoc);
     ui.startEditLocation(null, uiLoc);
   }, [ui]);
 
   const editLocation = useCallback(
     (index: number, value: LocationFormValues) => {
+      console.log(index, value);
       ui.startEditLocation(index, value);
     },
     [ui]
@@ -353,6 +357,7 @@ export default function RoutesPage() {
                     <div className="flex justify-between items-center mb-4">
                       <h4 className="text-lg font-medium">Location блоки</h4>
                       <button
+                        type="button"
                         onClick={addLocation}
                         className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
                       >
@@ -369,6 +374,7 @@ export default function RoutesPage() {
                             <span className="font-medium">{loc.path}</span>
                             <div>
                               <button
+                                type="button"
                                 onClick={() => editLocation(index, loc)}
                                 className="text-blue-600 hover:text-blue-800 mr-2 text-sm"
                               >
