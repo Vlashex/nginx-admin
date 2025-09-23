@@ -1,9 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRoutesStore } from "@/shared/store/slices/routesSlice";
 import { generateConfigPreview } from "@/core/services/ConfigGenerator";
-import { z } from "zod";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  validateForm,
+  validateLocation,
+  createLocation,
+} from "@/core/useCases/routeForm";
 import {
   Form,
   FormControl,
@@ -17,46 +20,55 @@ import { Button } from "@/shared/ui-kit/button";
 
 type FormMode = "create" | "edit";
 
-const advancedSchema = z.object({
-  client_max_body_size: z.string().min(1),
-  keepalive_timeout: z.string().min(1),
-  gzip: z.boolean().default(false),
-  gzip_types: z.string().default(""),
-  caching: z.boolean().default(false),
-  cache_valid: z.string().default(""),
-});
+type RouteFormValues = {
+  id?: string;
+  domain: string;
+  port: number;
+  root: string;
+  enabled: boolean;
+  ssl: boolean;
+  ssl_certificate?: string;
+  ssl_certificate_key?: string;
+  proxy_pass?: string;
+  locations: LocationFormValues[];
+  advanced: {
+    client_max_body_size: string;
+    keepalive_timeout: string;
+    gzip: boolean;
+    gzip_types: string;
+    caching: boolean;
+    cache_valid: string;
+  };
+};
+type LocationFormValues = {
+  path: string;
+  proxy_pass?: string;
+  try_files?: string;
+  index?: string;
+  extra_directives?: string;
+};
 
-const locationSchema = z.object({
-  path: z.string().min(1),
-  proxy_pass: z.string().optional().or(z.literal("")),
-  try_files: z.string().optional().or(z.literal("")),
-  index: z.string().optional().or(z.literal("")),
-  extra_directives: z.string().optional().or(z.literal("")),
-});
-
-const routeSchema = z.object({
-  id: z.string().optional(),
-  domain: z.string().min(1, "Домен обязателен"),
-  port: z.coerce.number().int().min(1).max(65535),
-  root: z.string().min(1, "Корневая директория обязательна"),
-  enabled: z.boolean().default(true),
-  ssl: z.boolean().default(false),
-  ssl_certificate: z.string().optional().or(z.literal("")),
-  ssl_certificate_key: z.string().optional().or(z.literal("")),
-  proxy_pass: z.string().optional().or(z.literal("")),
-  locations: z.array(locationSchema).default([]),
-  advanced: advancedSchema.default({
-    client_max_body_size: "1m",
-    keepalive_timeout: "65s",
-    gzip: false,
-    gzip_types: "",
-    caching: false,
-    cache_valid: "",
-  }),
-});
-
-type RouteFormValues = z.infer<typeof routeSchema>;
-type LocationFormValues = z.infer<typeof locationSchema>;
+function createRouteDefaults(): RouteFormValues {
+  return {
+    domain: "" as any,
+    port: 80 as any,
+    root: "" as any,
+    enabled: true,
+    ssl: false,
+    ssl_certificate: "",
+    ssl_certificate_key: "",
+    proxy_pass: "",
+    locations: [],
+    advanced: {
+      client_max_body_size: "1m",
+      keepalive_timeout: "65s",
+      gzip: false,
+      gzip_types: "",
+      caching: false,
+      cache_valid: "",
+    },
+  } as RouteFormValues;
+}
 
 function useRoutesList() {
   const { routes, isLoading, error, loadRoutes } = useRoutesStore();
@@ -94,26 +106,15 @@ export default function RoutesPage() {
   }>({ index: null, value: null });
 
   const form = useForm<RouteFormValues>({
-    resolver: zodResolver(routeSchema),
-    defaultValues: {
-      domain: "",
-      port: 80,
-      root: "",
-      enabled: true,
-      ssl: false,
-      ssl_certificate: "",
-      ssl_certificate_key: "",
-      proxy_pass: "",
-      locations: [],
-      advanced: {
-        client_max_body_size: "1m",
-        keepalive_timeout: "65s",
-        gzip: false,
-        gzip_types: "",
-        caching: false,
-        cache_valid: "",
-      },
+    resolver: async (values) => {
+      const errors = validateForm(values as any);
+      const rhfErrors: Record<string, { type: string; message: string }> = {};
+      Object.entries(errors).forEach(([k, v]) => {
+        rhfErrors[k] = { type: "manual", message: v };
+      });
+      return { values, errors: rhfErrors } as any;
     },
+    defaultValues: createRouteDefaults(),
   });
 
   const openForCreate = useCallback(() => {
@@ -143,28 +144,12 @@ export default function RoutesPage() {
     setOpState({ loading: true, error: null, success: null });
     try {
       if (mode === "create" || !values.id) {
-        const { id: _, ...data } = values;
-        await addRoute({
-          domain: data.domain as any,
-          port: data.port as any,
-          root: data.root as any,
-          enabled: data.enabled,
-          ssl: data.ssl,
-          ssl_certificate: data.ssl_certificate || undefined,
-          ssl_certificate_key: data.ssl_certificate_key || undefined,
-          proxy_pass: data.proxy_pass || undefined,
-          locations: data.locations as any,
-          advanced: data.advanced as any,
-        });
+        const { id: _ignored, metadata: _m, ...data } = values as any;
+        await addRoute(data as any);
         setOpState({ loading: false, error: null, success: "Сохранено" });
       } else {
-        const { id, ...rest } = values;
-        await updateRouteUseCase(id!, {
-          ...rest,
-          ssl_certificate: rest.ssl_certificate || undefined,
-          ssl_certificate_key: rest.ssl_certificate_key || undefined,
-          proxy_pass: rest.proxy_pass || undefined,
-        } as any);
+        const { id, ...rest } = values as any;
+        await updateRouteUseCase(id, rest);
         setOpState({ loading: false, error: null, success: "Обновлено" });
       }
       closeModal();
@@ -178,16 +163,15 @@ export default function RoutesPage() {
   });
 
   const addLocation = useCallback(() => {
-    setLocationEditing({
-      index: null,
-      value: {
-        path: "/",
-        try_files: "",
-        index: "",
-        extra_directives: "",
-        proxy_pass: "",
-      },
-    });
+    const loc = createLocation({ path: "/" as any });
+    const uiLoc: LocationFormValues = {
+      path: (loc.path as unknown as string) || "/",
+      proxy_pass: "",
+      try_files: loc.try_files as any,
+      index: loc.index as any,
+      extra_directives: loc.extra_directives as any,
+    };
+    setLocationEditing({ index: null, value: uiLoc });
   }, []);
 
   const editLocation = useCallback(
@@ -210,6 +194,10 @@ export default function RoutesPage() {
 
   const saveLocation = useCallback(
     (value: LocationFormValues) => {
+      const errors = validateLocation(value as any);
+      if (Object.keys(errors).length > 0) {
+        return; // Do not save if invalid; UI messages are shown per field
+      }
       const current = [...form.getValues("locations")];
       if (locationEditing.index === null) {
         current.push(value);
@@ -538,7 +526,7 @@ export default function RoutesPage() {
                       <input
                         type="checkbox"
                         className="h-4 w-4 text-blue-600 rounded"
-                        checked={form.watch("advanced.gzip")}
+                        checked={!!form.watch("advanced.gzip")}
                         onChange={(e) =>
                           form.setValue("advanced.gzip", e.target.checked)
                         }
@@ -567,7 +555,7 @@ export default function RoutesPage() {
                       <input
                         type="checkbox"
                         className="h-4 w-4 text-blue-600 rounded"
-                        checked={form.watch("advanced.caching")}
+                        checked={!!form.watch("advanced.caching")}
                         onChange={(e) =>
                           form.setValue("advanced.caching", e.target.checked)
                         }
@@ -605,10 +593,13 @@ export default function RoutesPage() {
                         enabled: form.getValues("enabled"),
                         ssl: form.getValues("ssl"),
                         ssl_certificate:
-                          form.getValues("ssl_certificate") || undefined,
+                          (form.getValues("ssl_certificate") as any) ||
+                          undefined,
                         ssl_certificate_key:
-                          form.getValues("ssl_certificate_key") || undefined,
-                        proxy_pass: form.getValues("proxy_pass") || undefined,
+                          (form.getValues("ssl_certificate_key") as any) ||
+                          undefined,
+                        proxy_pass:
+                          (form.getValues("proxy_pass") as any) || undefined,
                         locations: form.getValues("locations") as any,
                         advanced: form.getValues("advanced") as any,
                       })}
