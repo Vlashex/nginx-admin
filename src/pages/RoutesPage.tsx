@@ -1,6 +1,4 @@
 import { useCallback } from "react";
-import { useRoutesStore } from "@/shared/store/slices/routesSlice";
-import { generateConfigPreview } from "@/core/services/ConfigGenerator";
 import { useForm } from "react-hook-form";
 import {
   validateLocation,
@@ -9,8 +7,6 @@ import {
   updateLocationInRoute,
   removeLocation,
 } from "@/core/useCases/routeForm";
-import { toggleRouteStatus as toggleStatusUC } from "@/core/useCases/routes";
-import { useRoutesRepository } from "@/shared/store/repositoryHooks";
 import {
   createRouteDefaults,
   routeFormResolver,
@@ -19,6 +15,7 @@ import {
 } from "@/shared/lib/formAdapters";
 import { useRouteOperations } from "@/processes/useRouteOperations";
 import { useRouteFormStore } from "@/shared/store/useRouteFormStore";
+import { useRoutePreview } from "@/processes/useRoutePreview";
 import {
   Form,
   FormControl,
@@ -33,15 +30,14 @@ import { useRoutesList } from "@/processes/useRoutesList";
 
 export default function RoutesPage() {
   const { list, isLoading, error } = useRoutesList();
-  const { deleteRoute } = useRoutesStore();
-  const repo = useRoutesRepository();
-  const ops = useRouteOperations(repo);
+  const ops = useRouteOperations();
   const ui = useRouteFormStore();
 
   const form = useForm<RouteFormValues>({
     resolver: routeFormResolver as any,
     defaultValues: createRouteDefaults(),
   });
+  const preview = useRoutePreview(form as any);
 
   const openForCreate = useCallback(() => {
     ui.openForCreate();
@@ -167,7 +163,7 @@ export default function RoutesPage() {
                   </td>
                   <td className="px-6 py-4 space-x-2">
                     <button
-                      onClick={() => toggleStatusUC(repo, route.id)}
+                      onClick={() => ops.toggle(route.id)}
                       className="text-yellow-400 hover:text-yellow-200"
                     >
                       {route.enabled ? "Отключить" : "Включить"}
@@ -179,7 +175,7 @@ export default function RoutesPage() {
                       Редактировать
                     </button>
                     <button
-                      onClick={() => deleteRoute(route.id)}
+                      onClick={() => ops.remove(route.id)}
                       className="text-red-400 hover:text-red-200"
                     >
                       Удалить
@@ -501,24 +497,7 @@ export default function RoutesPage() {
                       Предпросмотр конфигурации
                     </h4>
                     <pre className="bg-gray-800 text-gray-200 p-4 rounded-md overflow-x-auto text-sm">
-                      {generateConfigPreview({
-                        id: form.getValues("id") || "preview",
-                        domain: form.getValues("domain") as any,
-                        port: form.getValues("port") as any,
-                        root: form.getValues("root") as any,
-                        enabled: form.getValues("enabled"),
-                        ssl: form.getValues("ssl"),
-                        ssl_certificate:
-                          (form.getValues("ssl_certificate") as any) ||
-                          undefined,
-                        ssl_certificate_key:
-                          (form.getValues("ssl_certificate_key") as any) ||
-                          undefined,
-                        proxy_pass:
-                          (form.getValues("proxy_pass") as any) || undefined,
-                        locations: form.getValues("locations") as any,
-                        advanced: form.getValues("advanced") as any,
-                      })}
+                      {preview}
                     </pre>
                   </div>
                 )}

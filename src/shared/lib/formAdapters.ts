@@ -70,3 +70,19 @@ export const routeFormResolver: Resolver<RouteFormValues> = async (values) => {
   const errors = validateForm(values as any);
   return mapErrorsToRHF(errors, values);
 };
+
+export function mapFormToRoute(values: RouteFormValues) {
+  return {
+    id: values.id || "preview",
+    domain: values.domain as any,
+    port: values.port as any,
+    root: values.root as any,
+    enabled: values.enabled,
+    ssl: values.ssl,
+    ssl_certificate: (values.ssl_certificate || undefined) as any,
+    ssl_certificate_key: (values.ssl_certificate_key || undefined) as any,
+    proxy_pass: (values.proxy_pass || undefined) as any,
+    locations: values.locations as any,
+    advanced: values.advanced as any,
+  } as any;
+}

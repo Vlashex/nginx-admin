@@ -1,12 +1,13 @@
 import { useState, useCallback } from "react";
-import type { RouteRepository } from "@/core/repositories/RouteRepository";
+import { useRoutesRepository } from "@/shared/store/repositoryHooks";
 import {
   createRoute,
   updateRoute,
   toggleRouteStatus,
 } from "@/core/useCases/routes";
 
-export function useRouteOperations(repository: RouteRepository) {
+export function useRouteOperations() {
+  const repository = useRoutesRepository();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -50,6 +51,14 @@ export function useRouteOperations(repository: RouteRepository) {
     [repository, wrap]
   );
 
+  const remove = useCallback(
+    async (id: string) =>
+      wrap(async () => {
+        await repository.delete(id);
+      }, "Удалено"),
+    [repository, wrap]
+  );
+
   return {
     loading,
     error,
@@ -57,6 +66,7 @@ export function useRouteOperations(repository: RouteRepository) {
     create,
     update,
     toggle,
+    remove,
     setSuccess,
     setError,
   };
