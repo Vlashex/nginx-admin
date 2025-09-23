@@ -8,7 +8,6 @@ import {
   removeLocation,
 } from "@/core/useCases/routeForm";
 import {
-  createRouteDefaults,
   routeFormResolver,
   type RouteFormValues,
   type LocationFormValues,
@@ -28,6 +27,7 @@ import { Input } from "@/shared/ui-kit/input";
 import { Button } from "@/shared/ui-kit/button";
 import { useRoutesList } from "@/processes/useRoutesList";
 import type { URLPath } from "@/core/entities/types";
+import { createRoute } from "@/shared/lib/factories";
 
 export default function RoutesPage() {
   const { list, isLoading, error } = useRoutesList();
@@ -35,14 +35,14 @@ export default function RoutesPage() {
   const ui = useRouteFormStore();
 
   const form = useForm<RouteFormValues>({
-    resolver: routeFormResolver as any,
-    defaultValues: createRouteDefaults(),
+    resolver: routeFormResolver,
+    defaultValues: createRoute(),
   });
-  const preview = useRoutePreview(form as any);
+  const preview = useRoutePreview(form);
 
   const openForCreate = useCallback(() => {
     ui.openForCreate();
-    form.reset(createRouteDefaults());
+    form.reset(createRoute());
   }, [form, ui]);
 
   const openForEdit = useCallback(
@@ -61,15 +61,16 @@ export default function RoutesPage() {
   const onSubmit = form.handleSubmit(async (values) => {
     try {
       if (ui.mode === "create" || !values.id) {
-        const { id: _ignored, metadata: _m, ...data } = values as any;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id, metadata, ...data } = values;
 
-        await ops.create(data as any);
+        await ops.create(data);
       } else {
-        const { id, ...rest } = values as any;
+        const { id, ...rest } = values;
         await ops.update(id, rest);
       }
       closeModal();
-    } catch (e) {
+    } catch {
       // state already captured in ops
     }
   });
@@ -78,11 +79,11 @@ export default function RoutesPage() {
     const loc = createLocation({ path: "/" as URLPath });
     console.log(loc);
     const uiLoc: LocationFormValues = {
-      path: (loc.path as unknown as string) || "/",
+      path: loc.path || "/",
       proxy_pass: "",
-      try_files: loc.try_files as any,
-      index: loc.index as any,
-      extra_directives: loc.extra_directives as any,
+      try_files: loc.try_files || "",
+      index: loc.index || "",
+      extra_directives: loc.extra_directives || "",
     };
     console.log(uiLoc);
     ui.startEditLocation(null, uiLoc);
@@ -98,8 +99,8 @@ export default function RoutesPage() {
 
   const deleteLocation = useCallback(
     (index: number) => {
-      const current = form.getValues("locations") as any[];
-      const next = removeLocation(current as any, index) as any;
+      const current = form.getValues("locations");
+      const next = removeLocation(current, index);
       form.setValue("locations", next);
     },
     [form]
@@ -107,19 +108,19 @@ export default function RoutesPage() {
 
   const saveLocation = useCallback(
     (value: LocationFormValues) => {
-      const errors = validateLocation(value as any);
+      const errors = validateLocation(value);
       if (Object.keys(errors).length > 0) {
         return;
       }
-      const current = form.getValues("locations") as any[];
+      const current = form.getValues("locations") as LocationFormValues[];
       const next =
         ui.locationEditing.index === null
-          ? (addLocationToRoute(current as any, value as any) as any)
+          ? (addLocationToRoute(current, value) as LocationFormValues[])
           : (updateLocationInRoute(
-              current as any,
+              current,
               ui.locationEditing.index!,
-              value as any
-            ) as any);
+              value
+            ) as LocationFormValues[]);
       form.setValue("locations", next);
       ui.startEditLocation(null, null);
     },
@@ -173,7 +174,7 @@ export default function RoutesPage() {
                       {route.enabled ? "Отключить" : "Включить"}
                     </button>
                     <button
-                      onClick={() => openForEdit(route as any)}
+                      onClick={() => openForEdit(route)}
                       className="text-blue-400 hover:text-blue-200"
                     >
                       Редактировать
@@ -206,7 +207,7 @@ export default function RoutesPage() {
                 {["basic", "locations", "advanced", "preview"].map((tab) => (
                   <button
                     key={tab}
-                    onClick={() => ui.setActiveTab(tab as any)}
+                    onClick={() => ui.setActiveTab(tab)}
                     className={`mr-8 py-2 px-1 border-b-2 font-medium text-sm ${
                       ui.activeTab === tab
                         ? "border-blue-500 text-blue-600"
@@ -412,7 +413,7 @@ export default function RoutesPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
-                      name={"advanced.client_max_body_size" as any}
+                      name="advanced.client_max_body_size"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>
@@ -428,7 +429,7 @@ export default function RoutesPage() {
 
                     <FormField
                       control={form.control}
-                      name={"advanced.keepalive_timeout" as any}
+                      name="advanced.keepalive_timeout"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Таймаут keepalive</FormLabel>
@@ -454,7 +455,7 @@ export default function RoutesPage() {
 
                     <FormField
                       control={form.control}
-                      name={"advanced.gzip_types" as any}
+                      name="advanced.gzip_types"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Gzip типы</FormLabel>
@@ -483,7 +484,7 @@ export default function RoutesPage() {
 
                     <FormField
                       control={form.control}
-                      name={"advanced.cache_valid" as any}
+                      name="advanced.cache_valid"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Валидность кэша</FormLabel>

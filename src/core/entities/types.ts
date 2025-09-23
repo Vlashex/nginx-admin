@@ -1,8 +1,15 @@
 // core/entities/types.ts
-export type Domain = string & { readonly _brand: unique symbol };
-export type Port = number & { readonly _brand: unique symbol };
-export type UnixPath = string & { readonly _brand: unique symbol };
-export type URLPath = string & { readonly _brand: unique symbol };
+
+declare const DomainBrand: unique symbol;
+declare const PortBrand: unique symbol;
+declare const UnixPathBrand: unique symbol;
+declare const URLPathBrand: unique symbol;
+
+export type Domain = string & { readonly _brand: typeof DomainBrand };
+export type Port = number & { readonly _brand: typeof PortBrand };
+export type UnixPath = string & { readonly _brand: typeof UnixPathBrand };
+export type URLPath = string & { readonly _brand: typeof URLPathBrand };
+
 export type SizeUnit = `${number}${"k" | "m" | "g"}`;
 export type TimeUnit = `${number}${"s" | "m" | "h" | "d"}`;
 

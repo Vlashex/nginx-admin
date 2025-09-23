@@ -37,7 +37,7 @@ test("generateConfigPreview emits valid nginx server block with directives", asy
         createdBy: "system",
         tags: [],
       },
-    } as any;
+    };
     return generateConfigPreview(route);
   });
 

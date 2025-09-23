@@ -1,5 +1,13 @@
 import type { Resolver } from "react-hook-form";
 import { validateForm } from "@/core/useCases/routeForm";
+import type {
+  Route,
+  Domain,
+  Port,
+  UnixPath,
+  AdvancedConfig,
+  URLPath,
+} from "@/core/entities/types";
 
 export type LocationFormValues = {
   path: string;
@@ -30,28 +38,6 @@ export type RouteFormValues = {
   };
 };
 
-export function createRouteDefaults(): RouteFormValues {
-  return {
-    domain: "",
-    port: 80,
-    root: "",
-    enabled: true,
-    ssl: false,
-    ssl_certificate: "",
-    ssl_certificate_key: "",
-    proxy_pass: "",
-    locations: [],
-    advanced: {
-      client_max_body_size: "1m",
-      keepalive_timeout: "65s",
-      gzip: false,
-      gzip_types: "",
-      caching: false,
-      cache_valid: "",
-    },
-  };
-}
-
 function mapErrorsToRHF<TValues>(
   errors: Record<string, string>,
   values: TValues
@@ -67,22 +53,50 @@ function mapErrorsToRHF<TValues>(
 }
 
 export const routeFormResolver: Resolver<RouteFormValues> = async (values) => {
-  const errors = validateForm(values as any);
+  const errors = validateForm(values as Partial<Route>);
   return mapErrorsToRHF(errors, values);
 };
 
-export function mapFormToRoute(values: RouteFormValues) {
+export function mapFormToRoute(values: RouteFormValues): Route {
   return {
     id: values.id || "preview",
-    domain: values.domain as any,
-    port: values.port as any,
-    root: values.root as any,
+    domain: values.domain as Domain,
+    port: values.port as Port,
+    root: values.root as UnixPath,
     enabled: values.enabled,
     ssl: values.ssl,
-    ssl_certificate: (values.ssl_certificate || undefined) as any,
-    ssl_certificate_key: (values.ssl_certificate_key || undefined) as any,
-    proxy_pass: (values.proxy_pass || undefined) as any,
-    locations: values.locations as any,
-    advanced: values.advanced as any,
-  } as any;
+    ssl_certificate: values.ssl_certificate
+      ? (values.ssl_certificate as UnixPath)
+      : undefined,
+    ssl_certificate_key: values.ssl_certificate_key
+      ? (values.ssl_certificate_key as UnixPath)
+      : undefined,
+    proxy_pass: values.proxy_pass ? (values.proxy_pass as Domain) : undefined,
+    locations: values.locations.map((loc) => ({
+      path: loc.path as URLPath, // ✅ Исправлено
+      proxy_pass: loc.proxy_pass ? (loc.proxy_pass as Domain) : undefined,
+      try_files: loc.try_files,
+      index: loc.index,
+      extra_directives: loc.extra_directives,
+    })),
+    advanced: {
+      client_max_body_size: values.advanced.client_max_body_size as `${number}${
+        | "k"
+        | "m"
+        | "g"}`,
+      keepalive_timeout: values.advanced.keepalive_timeout as `${number}${
+        | "s"
+        | "m"
+        | "h"
+        | "d"}`,
+      gzip: values.advanced.gzip,
+      gzip_types: values.advanced.gzip_types,
+      caching: values.advanced.caching,
+      cache_valid: values.advanced.cache_valid as `${number}${
+        | "s"
+        | "m"
+        | "h"
+        | "d"}`,
+    } as AdvancedConfig,
+  };
 }

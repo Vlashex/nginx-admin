@@ -12,7 +12,7 @@ import { generateConfigPreview } from "@/core/services/ConfigGenerator";
 // @ts-expect-error test harness global
 window.__core__ = { generateConfigPreview };
 
-function App() {
+export function App() {
   const server = useServerStore();
   const logs = useLogsStore();
   const routes = useRoutesStore();

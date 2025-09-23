@@ -6,6 +6,8 @@ import {
   updateRoute,
   toggleRouteStatus,
 } from "@/core/useCases/routes";
+import type { Route } from "@/core/entities/types";
+import type { RouteFormValues } from "@/shared/lib/formAdapters";
 
 export function useRouteOperations() {
   const repository = useRoutesRepository();
@@ -37,7 +39,7 @@ export function useRouteOperations() {
   );
 
   const create = useCallback(
-    async (data: any) =>
+    async (data: RouteFormValues) =>
       wrap(async () => {
         await createRoute(repository, data);
         await loadRoutes();
@@ -46,7 +48,7 @@ export function useRouteOperations() {
   );
 
   const update = useCallback(
-    async (id: string, updates: any) =>
+    async (id: string, updates: Partial<Route>) =>
       wrap(async () => {
         await updateRoute(repository, id, updates);
         await loadRoutes();
