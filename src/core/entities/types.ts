@@ -1,10 +1,11 @@
 // core/entities/types.ts
-
+/* eslint-disable @typescript-eslint/no-unused-vars */
 declare const DomainBrand: unique symbol;
 declare const PortBrand: unique symbol;
 declare const UnixPathBrand: unique symbol;
 declare const URLPathBrand: unique symbol;
-
+/* eslint-enable @typescript-eslint/no-unused-vars */
+// @ts-check
 export type Domain = string & { readonly _brand: typeof DomainBrand };
 export type Port = number & { readonly _brand: typeof PortBrand };
 export type UnixPath = string & { readonly _brand: typeof UnixPathBrand };

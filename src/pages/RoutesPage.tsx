@@ -7,13 +7,12 @@ import {
   updateLocationInRoute,
   removeLocation,
 } from "@/core/useCases/routeForm";
-import {
-  routeFormResolver,
-  type RouteFormValues,
-  type LocationFormValues,
-} from "@/shared/lib/formAdapters";
+import { routeFormResolver } from "@/shared/lib/formAdapters";
 import { useRouteOperations } from "@/processes/useRouteOperations";
-import { useRouteFormStore } from "@/shared/store/useRouteFormStore";
+import {
+  useRouteFormStore,
+  type ActiveTab,
+} from "@/shared/store/useRouteFormStore";
 import { useRoutePreview } from "@/processes/useRoutePreview";
 import {
   Form,
@@ -26,15 +25,15 @@ import {
 import { Input } from "@/shared/ui-kit/input";
 import { Button } from "@/shared/ui-kit/button";
 import { useRoutesList } from "@/processes/useRoutesList";
-import type { URLPath } from "@/core/entities/types";
-import { createRoute } from "@/shared/lib/factories";
+import type { LocationConfig, Route, URLPath } from "@/core/entities/types";
+import { createRoute, domain, urlPath } from "@/shared/lib/factories";
 
 export default function RoutesPage() {
   const { list, isLoading, error } = useRoutesList();
   const ops = useRouteOperations();
   const ui = useRouteFormStore();
 
-  const form = useForm<RouteFormValues>({
+  const form = useForm<Route>({
     resolver: routeFormResolver,
     defaultValues: createRoute(),
   });
@@ -46,7 +45,7 @@ export default function RoutesPage() {
   }, [form, ui]);
 
   const openForEdit = useCallback(
-    (route: RouteFormValues) => {
+    (route: Route) => {
       ui.openForEdit(null);
       form.reset(route);
     },
@@ -61,10 +60,9 @@ export default function RoutesPage() {
   const onSubmit = form.handleSubmit(async (values) => {
     try {
       if (ui.mode === "create" || !values.id) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { id, metadata, ...data } = values;
+         
 
-        await ops.create(data);
+        await ops.create(values);
       } else {
         const { id, ...rest } = values;
         await ops.update(id, rest);
@@ -78,9 +76,9 @@ export default function RoutesPage() {
   const addLocation = useCallback(() => {
     const loc = createLocation({ path: "/" as URLPath });
     console.log(loc);
-    const uiLoc: LocationFormValues = {
-      path: loc.path || "/",
-      proxy_pass: "",
+    const uiLoc: LocationConfig = {
+      path: urlPath(loc.path || "/"),
+      proxy_pass: domain(""),
       try_files: loc.try_files || "",
       index: loc.index || "",
       extra_directives: loc.extra_directives || "",
@@ -90,7 +88,7 @@ export default function RoutesPage() {
   }, [ui]);
 
   const editLocation = useCallback(
-    (index: number, value: LocationFormValues) => {
+    (index: number, value: LocationConfig) => {
       console.log(index, value);
       ui.startEditLocation(index, value);
     },
@@ -107,20 +105,20 @@ export default function RoutesPage() {
   );
 
   const saveLocation = useCallback(
-    (value: LocationFormValues) => {
+    (value: LocationConfig) => {
       const errors = validateLocation(value);
       if (Object.keys(errors).length > 0) {
         return;
       }
-      const current = form.getValues("locations") as LocationFormValues[];
+      const current = form.getValues("locations") as LocationConfig[];
       const next =
         ui.locationEditing.index === null
-          ? (addLocationToRoute(current, value) as LocationFormValues[])
+          ? (addLocationToRoute(current, value) as LocationConfig[])
           : (updateLocationInRoute(
               current,
               ui.locationEditing.index!,
               value
-            ) as LocationFormValues[]);
+            ) as LocationConfig[]);
       form.setValue("locations", next);
       ui.startEditLocation(null, null);
     },
@@ -204,7 +202,9 @@ export default function RoutesPage() {
 
             <div className="border-b border-gray-200 mb-4">
               <nav className="flex -mb-px">
-                {["basic", "locations", "advanced", "preview"].map((tab) => (
+                {(
+                  ["basic", "locations", "advanced", "preview"] as ActiveTab[]
+                ).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => ui.setActiveTab(tab)}
@@ -543,7 +543,7 @@ export default function RoutesPage() {
                   onChange={(e) =>
                     ui.startEditLocation(ui.locationEditing.index, {
                       ...ui.locationEditing.value!,
-                      path: e.target.value,
+                      path: urlPath(e.target.value),
                     })
                   }
                 />
@@ -557,7 +557,7 @@ export default function RoutesPage() {
                   onChange={(e) =>
                     ui.startEditLocation(ui.locationEditing.index, {
                       ...ui.locationEditing.value!,
-                      proxy_pass: e.target.value,
+                      proxy_pass: domain(e.target.value),
                     })
                   }
                 />

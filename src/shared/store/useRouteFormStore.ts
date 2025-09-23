@@ -1,30 +1,24 @@
+import type { LocationConfig } from "@/core/entities/types";
 import { create } from "zustand";
 
 type FormMode = "create" | "edit";
 
-export type LocationFormValues = {
-  path: string;
-  proxy_pass?: string;
-  try_files?: string;
-  index?: string;
-  extra_directives?: string;
-};
-
+export type ActiveTab = "basic" | "locations" | "advanced" | "preview";
 interface RouteFormUIState {
   modalOpen: boolean;
   mode: FormMode;
-  activeTab: "basic" | "locations" | "advanced" | "preview";
-  locationEditing: { index: number | null; value: LocationFormValues | null };
+  activeTab: ActiveTab;
+  locationEditing: { index: number | null; value: LocationConfig | null };
 }
 
 interface RouteFormUIActions {
   openForCreate: () => void;
-  openForEdit: (value: LocationFormValues | null) => void;
+  openForEdit: (value: LocationConfig | null) => void;
   closeModal: () => void;
   setActiveTab: (tab: RouteFormUIState["activeTab"]) => void;
   startEditLocation: (
     index: number | null,
-    value: LocationFormValues | null
+    value: LocationConfig | null
   ) => void;
 }
 
