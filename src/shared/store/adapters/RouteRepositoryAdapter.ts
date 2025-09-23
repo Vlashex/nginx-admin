@@ -15,7 +15,9 @@ export const createRouteRepositoryAdapter = (
   save: async (route) => {
     set((state) => {
       const newRoutes = new Map(state.routes);
+
       newRoutes.set(route.id, route);
+
       return { routes: newRoutes };
     });
   },

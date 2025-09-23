@@ -3,15 +3,16 @@ import { createRouteRepositoryAdapter } from "@/shared/store/adapters/RouteRepos
 import type { RouteRepository } from "@/core/repositories/RouteRepository";
 
 export function useRoutesRepository(): RouteRepository {
-  const store = useRoutesStore();
-  // Bind adapter to zustand store state and setter
+  const routes = useRoutesStore((s) => s.routes); // берём данные
+  const api = useRoutesStore; // сам стор с setState/getState
+
   return createRouteRepositoryAdapter(
-    () => ({ routes: store.routes }),
-    (updater) => {
-      const partial = updater({ routes: store.routes });
+    () => ({ routes }),
+    async (updater) => {
+      const partial = updater({ routes });
       if (partial.routes) {
-        // write back into zustand store
-        (store as any).setState({ routes: partial.routes });
+        api.setState({ routes: partial.routes }); // ✅ работает
+        await api.getState().saveRoutes(); // ✅ вызвать экшен
       }
     }
   );

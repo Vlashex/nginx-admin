@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useRoutesRepository } from "@/shared/store/repositoryHooks";
+import { useRoutesStore } from "@/shared/store/slices";
 import {
   createRoute,
   updateRoute,
@@ -8,6 +9,7 @@ import {
 
 export function useRouteOperations() {
   const repository = useRoutesRepository();
+  const loadRoutes = useRoutesStore((s) => s.loadRoutes);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -35,29 +37,46 @@ export function useRouteOperations() {
   );
 
   const create = useCallback(
-    async (data: any) => wrap(() => createRoute(repository, data), "Сохранено"),
-    [repository, wrap]
+    async (data: any) =>
+      wrap(async () => {
+        await createRoute(repository, data);
+        await loadRoutes();
+      }, "Сохранено"),
+    [repository, loadRoutes, wrap]
   );
 
   const update = useCallback(
     async (id: string, updates: any) =>
-      wrap(() => updateRoute(repository, id, updates), "Обновлено"),
-    [repository, wrap]
+      wrap(async () => {
+        await updateRoute(repository, id, updates);
+        await loadRoutes();
+      }, "Обновлено"),
+    [repository, loadRoutes, wrap]
   );
 
   const toggle = useCallback(
     async (id: string) =>
-      wrap(() => toggleRouteStatus(repository, id), "Готово"),
-    [repository, wrap]
+      wrap(async () => {
+        await toggleRouteStatus(repository, id);
+        await loadRoutes();
+      }, "Готово"),
+    [repository, loadRoutes, wrap]
   );
 
   const remove = useCallback(
     async (id: string) =>
       wrap(async () => {
         await repository.delete(id);
+        await loadRoutes();
       }, "Удалено"),
-    [repository, wrap]
+    [repository, loadRoutes, wrap]
   );
+
+  const reset = useCallback(() => {
+    setLoading(false);
+    setError(null);
+    setSuccess(null);
+  }, []);
 
   return {
     loading,
@@ -67,7 +86,6 @@ export function useRouteOperations() {
     update,
     toggle,
     remove,
-    setSuccess,
-    setError,
+    reset,
   };
 }

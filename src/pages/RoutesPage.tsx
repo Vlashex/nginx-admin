@@ -54,14 +54,14 @@ export default function RoutesPage() {
 
   const closeModal = useCallback(() => {
     ui.closeModal();
-    ops.setSuccess(null);
-    ops.setError(null);
+    ops.reset();
   }, [ops, ui]);
 
   const onSubmit = form.handleSubmit(async (values) => {
     try {
       if (ui.mode === "create" || !values.id) {
         const { id: _ignored, metadata: _m, ...data } = values as any;
+
         await ops.create(data as any);
       } else {
         const { id, ...rest } = values as any;

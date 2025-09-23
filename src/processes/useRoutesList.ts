@@ -2,7 +2,10 @@ import { useRoutesStore } from "@/shared/store/slices";
 import { useEffect, useMemo } from "react";
 
 export function useRoutesList() {
-  const { routes, isLoading, error, loadRoutes } = useRoutesStore();
+  const routes = useRoutesStore((s) => s.routes);
+  const isLoading = useRoutesStore((s) => s.isLoading);
+  const error = useRoutesStore((s) => s.error);
+  const loadRoutes = useRoutesStore((s) => s.loadRoutes);
   useEffect(() => {
     loadRoutes();
   }, [loadRoutes]);
