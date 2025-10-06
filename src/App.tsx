@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import RoutesPage from "@/pages/RoutesPage";
+import RoutesPage from "@/pages/routes/RoutesPage";
 
 function Sidebar({ isOpen }: { isOpen: boolean }) {
   return (

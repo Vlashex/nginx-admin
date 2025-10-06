@@ -94,8 +94,14 @@ export const RouteSchema = z.object({
   advanced: AdvancedConfigSchema.optional(),
   metadata: z
     .object({
-      createdAt: z.date(),
-      updatedAt: z.date(),
+      createdAt: z.preprocess(
+        (val) => (typeof val === "string" ? new Date(val) : val),
+        z.date()
+      ),
+      updatedAt: z.preprocess(
+        (val) => (typeof val === "string" ? new Date(val) : val),
+        z.date()
+      ),
       createdBy: z.string(),
       tags: z.array(z.string()),
     })

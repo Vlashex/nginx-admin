@@ -3,10 +3,18 @@ import { generateConfigPreview } from "@/core/services/ConfigGenerator";
 import type { UseFormReturn } from "react-hook-form";
 import { RouteSchema, type RouteInput } from "@/core/entities/types";
 
+import { useWatch } from "react-hook-form";
+
 export function useRoutePreview(form: UseFormReturn<RouteInput>) {
+  const values = useWatch({ control: form.control });
   return useMemo(() => {
-    const values = form.getValues();
-    const route = RouteSchema.parse(values);
-    return generateConfigPreview(route);
-  }, [form]);
+    try {
+      console.log(values);
+      const route = RouteSchema.parse(values);
+      return generateConfigPreview(route);
+    } catch (err) {
+      console.error(err);
+      return "# Ошибка конфигурации";
+    }
+  }, [values]);
 }
