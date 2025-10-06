@@ -68,9 +68,9 @@ export function createRoute(overrides: Partial<Route> = {}): Route {
   const now = new Date();
   return {
     id: crypto.randomUUID(),
-    domain: domain(""),
+    domain: domain("sh.ru"),
     port: port(80),
-    root: unixPath(""),
+    root: unixPath("/"),
     enabled: true,
     ssl: false,
     ssl_certificate: unixPath(""),

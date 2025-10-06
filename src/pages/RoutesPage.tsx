@@ -1,19 +1,4 @@
-import { useCallback } from "react";
-import { useForm } from "react-hook-form";
-import {
-  validateLocation,
-  createLocation,
-  addLocationToRoute,
-  updateLocationInRoute,
-  removeLocation,
-} from "@/core/useCases/routeForm";
-import { routeFormResolver } from "@/shared/lib/formAdapters";
-import { useRouteOperations } from "@/processes/useRouteOperations";
-import {
-  useRouteFormStore,
-  type ActiveTab,
-} from "@/shared/store/useRouteFormStore";
-import { useRoutePreview } from "@/processes/useRoutePreview";
+import { type ActiveTab } from "@/shared/store/useRouteFormStore";
 import {
   Form,
   FormControl,
@@ -24,106 +9,28 @@ import {
 } from "@/shared/ui-kit/form";
 import { Input } from "@/shared/ui-kit/input";
 import { Button } from "@/shared/ui-kit/button";
-import { useRoutesList } from "@/processes/useRoutesList";
-import type { LocationConfig, Route, URLPath } from "@/core/entities/types";
-import { createRoute, domain, urlPath } from "@/shared/lib/factories";
+import { useRoutesPage } from "@/core/useCases/useRoutesPage";
+import { domain, urlPath } from "@/shared/lib/factories";
+import { LocationConfigSchema, PortSchema } from "@/core/entities/types";
 
 export default function RoutesPage() {
-  const { list, isLoading, error } = useRoutesList();
-  const ops = useRouteOperations();
-  const ui = useRouteFormStore();
-
-  const form = useForm<Route>({
-    resolver: routeFormResolver,
-    defaultValues: createRoute(),
-  });
-  const preview = useRoutePreview(form);
-
-  const openForCreate = useCallback(() => {
-    ui.openForCreate();
-    form.reset(createRoute());
-  }, [form, ui]);
-
-  const openForEdit = useCallback(
-    (route: Route) => {
-      ui.openForEdit(null);
-      form.reset(route);
-    },
-    [form, ui]
-  );
-
-  const closeModal = useCallback(() => {
-    ui.closeModal();
-    ops.reset();
-  }, [ops, ui]);
-
-  const onSubmit = form.handleSubmit(async (values) => {
-    try {
-      if (ui.mode === "create" || !values.id) {
-         
-
-        await ops.create(values);
-      } else {
-        const { id, ...rest } = values;
-        await ops.update(id, rest);
-      }
-      closeModal();
-    } catch {
-      // state already captured in ops
-    }
-  });
-
-  const addLocation = useCallback(() => {
-    const loc = createLocation({ path: "/" as URLPath });
-    console.log(loc);
-    const uiLoc: LocationConfig = {
-      path: urlPath(loc.path || "/"),
-      proxy_pass: domain(""),
-      try_files: loc.try_files || "",
-      index: loc.index || "",
-      extra_directives: loc.extra_directives || "",
-    };
-    console.log(uiLoc);
-    ui.startEditLocation(null, uiLoc);
-  }, [ui]);
-
-  const editLocation = useCallback(
-    (index: number, value: LocationConfig) => {
-      console.log(index, value);
-      ui.startEditLocation(index, value);
-    },
-    [ui]
-  );
-
-  const deleteLocation = useCallback(
-    (index: number) => {
-      const current = form.getValues("locations");
-      const next = removeLocation(current, index);
-      form.setValue("locations", next);
-    },
-    [form]
-  );
-
-  const saveLocation = useCallback(
-    (value: LocationConfig) => {
-      const errors = validateLocation(value);
-      if (Object.keys(errors).length > 0) {
-        return;
-      }
-      const current = form.getValues("locations") as LocationConfig[];
-      const next =
-        ui.locationEditing.index === null
-          ? (addLocationToRoute(current, value) as LocationConfig[])
-          : (updateLocationInRoute(
-              current,
-              ui.locationEditing.index!,
-              value
-            ) as LocationConfig[]);
-      form.setValue("locations", next);
-      ui.startEditLocation(null, null);
-    },
-    [form, ui]
-  );
+  const {
+    list,
+    isLoading,
+    error,
+    ops,
+    ui,
+    form,
+    preview,
+    openForCreate,
+    openForEdit,
+    closeModal,
+    onSubmit,
+    addLocation,
+    editLocation,
+    deleteLocation,
+    saveLocation,
+  } = useRoutesPage();
 
   return (
     <div className="space-y-4">
@@ -249,7 +156,20 @@ export default function RoutesPage() {
                           <FormItem>
                             <FormLabel>Порт</FormLabel>
                             <FormControl>
-                              <Input type="number" {...field} />
+                              <Input
+                                type="number"
+                                value={PortSchema.parse(field.value)}
+                                onChange={(e) =>
+                                  field.onChange(
+                                    e.target.value === ""
+                                      ? undefined
+                                      : Number(e.target.value)
+                                  )
+                                }
+                                onBlur={field.onBlur}
+                                name={field.name}
+                                ref={field.ref}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -376,7 +296,12 @@ export default function RoutesPage() {
                             <div>
                               <button
                                 type="button"
-                                onClick={() => editLocation(index, loc)}
+                                onClick={() =>
+                                  editLocation(
+                                    index,
+                                    LocationConfigSchema.parse(loc)
+                                  )
+                                }
                                 className="text-blue-600 hover:text-blue-800 mr-2 text-sm"
                               >
                                 Редактировать
@@ -517,7 +442,7 @@ export default function RoutesPage() {
                   >
                     Отмена
                   </button>
-                  <Button type="submit" disabled={ops.loading}>
+                  <Button type="submit" disabled={false}>
                     {ui.mode === "edit" ? "Сохранить" : "Добавить"}
                   </Button>
                 </div>

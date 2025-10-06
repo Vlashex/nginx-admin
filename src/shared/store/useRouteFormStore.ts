@@ -13,7 +13,7 @@ interface RouteFormUIState {
 
 interface RouteFormUIActions {
   openForCreate: () => void;
-  openForEdit: (value: LocationConfig | null) => void;
+  openForEdit: () => void;
   closeModal: () => void;
   setActiveTab: (tab: RouteFormUIState["activeTab"]) => void;
   startEditLocation: (
