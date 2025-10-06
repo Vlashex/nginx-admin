@@ -34,10 +34,12 @@ import type {
   Route,
 } from "@/core/entities/types";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const makeValidator =
   <T>(schema: { safeParse: (value: unknown) => any }) =>
   (value: unknown): value is T =>
     schema.safeParse(value).success;
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export const validateDomain = makeValidator<Domain>(DomainSchema);
 export const validatePort = makeValidator<Port>(PortSchema);

@@ -11,9 +11,8 @@ import { useRouteOperations } from "@/processes/useRouteOperations";
 import { useRouteFormStore } from "@/shared/store/useRouteFormStore";
 import { useRoutePreview } from "@/processes/useRoutePreview";
 import { useRoutesList } from "@/processes/useRoutesList";
-import { createRoute, domain, urlPath } from "@/shared/lib/factories";
+import { createRoute, urlPath } from "@/shared/lib/factories";
 import {
-  LocationConfigSchema,
   RouteSchema,
   type LocationConfig,
   type Route,
@@ -21,7 +20,6 @@ import {
   type URLPath,
 } from "@/core/entities/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { safeParse } from "zod";
 
 export function useRoutesPage() {
   const { list, isLoading, error } = useRoutesList();
@@ -114,7 +112,6 @@ export function useRoutesPage() {
   const saveLocation = useCallback(
     (value: LocationConfig) => {
       const errors = validateLocation(value);
-      console.log(error);
       if (Object.keys(errors).length > 0) return;
 
       const current = form.getValues("locations") as LocationConfig[];

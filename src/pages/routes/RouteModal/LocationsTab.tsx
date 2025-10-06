@@ -1,13 +1,12 @@
-import * as React from "react";
-import type { UseFormReturn } from "react-hook-form";
+import type { FieldValues, UseFormReturn } from "react-hook-form";
 import { Button } from "@/shared/ui-kit/button";
 import {
   LocationConfigSchema,
   type LocationConfig,
 } from "@/core/entities/types";
 
-type Props = {
-  form: UseFormReturn<any>;
+type Props<T extends FieldValues = FieldValues> = {
+  form: UseFormReturn<T>;
   onAdd: () => void;
   onEdit: (index: number, value: LocationConfig) => void;
   onDelete: (index: number) => void;

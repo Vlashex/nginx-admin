@@ -14,6 +14,7 @@ type Props = {
   mode: "create" | "edit";
   activeTab: ActiveTab;
   setActiveTab: (t: ActiveTab) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   form: UseFormReturn<any>;
   onSubmit: React.FormEventHandler<HTMLFormElement>;
   onSaveRouteForce: () => Promise<void>;

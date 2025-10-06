@@ -1,5 +1,4 @@
 import { Button } from "@/shared/ui-kit/button";
-import * as React from "react";
 import type { Route } from "@/core/entities/types";
 
 type RouteListProps = {

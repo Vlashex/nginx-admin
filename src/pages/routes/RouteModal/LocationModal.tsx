@@ -1,4 +1,3 @@
-import * as React from "react";
 import { Input } from "@/shared/ui-kit/input";
 import { Button } from "@/shared/ui-kit/button";
 import { domain, urlPath } from "@/shared/lib/factories";

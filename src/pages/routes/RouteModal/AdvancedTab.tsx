@@ -1,5 +1,4 @@
-import * as React from "react";
-import type { UseFormReturn } from "react-hook-form";
+import type { FieldValues, UseFormReturn } from "react-hook-form";
 import {
   FormField,
   FormItem,
@@ -9,7 +8,9 @@ import {
 } from "@/shared/ui-kit/form";
 import { Input } from "@/shared/ui-kit/input";
 
-type Props = { form: UseFormReturn<any> };
+type Props<T extends FieldValues = FieldValues> = {
+  form: UseFormReturn<T>;
+};
 
 export function AdvancedTab({ form }: Props) {
   // реактивное наблюдение

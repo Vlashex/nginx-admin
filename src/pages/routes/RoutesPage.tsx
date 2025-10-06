@@ -1,4 +1,3 @@
-import * as React from "react";
 import { useRoutesPage } from "@/core/useCases/useRoutesPage";
 import { RouteList } from "./RouteList";
 import { RouteModal } from "./RouteModal/RouteModal";

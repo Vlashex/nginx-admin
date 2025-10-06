@@ -1,4 +1,3 @@
-import * as React from "react";
 import {
   FormField,
   FormItem,
@@ -10,6 +9,7 @@ import { Input } from "@/shared/ui-kit/input";
 import type { UseFormReturn } from "react-hook-form";
 import { PortSchema } from "@/core/entities/types";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Props = { form: UseFormReturn<any> };
 
 export function BasicTab({ form }: Props) {
