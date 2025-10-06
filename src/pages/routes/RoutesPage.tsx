@@ -17,10 +17,12 @@ export default function RoutesPage() {
     openForEdit,
     closeModal,
     onSubmit,
+    saveRouteForce,
     addLocation,
     editLocation,
     deleteLocation,
     saveLocation,
+    saveLocationForce,
   } = useRoutesPage();
 
   return (
@@ -42,6 +44,7 @@ export default function RoutesPage() {
         setActiveTab={ui.setActiveTab}
         form={form}
         onSubmit={onSubmit}
+        onSaveRouteForce={saveRouteForce}
         onClose={closeModal}
         onAddLocation={addLocation}
         onEditLocation={editLocation}
@@ -53,6 +56,7 @@ export default function RoutesPage() {
         editing={ui.locationEditing}
         onStartEditLocation={ui.startEditLocation}
         onSaveLocation={saveLocation}
+        onSaveLocationForce={saveLocationForce}
       />
     </div>
   );

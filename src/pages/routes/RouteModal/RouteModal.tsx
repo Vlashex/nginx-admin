@@ -16,6 +16,7 @@ type Props = {
   setActiveTab: (t: ActiveTab) => void;
   form: UseFormReturn<any>;
   onSubmit: React.FormEventHandler<HTMLFormElement>;
+  onSaveRouteForce: () => Promise<void>;
   onClose: () => void;
 
   // locations
@@ -33,6 +34,7 @@ export function RouteModal({
   setActiveTab,
   form,
   onSubmit,
+  onSaveRouteForce,
   onClose,
   onAddLocation,
   onEditLocation,
@@ -85,17 +87,26 @@ export function RouteModal({
             {activeTab === "advanced" && <AdvancedTab form={form} />}
             {activeTab === "preview" && <PreviewTab preview={preview} />}
 
-            <div className="flex justify-end mt-6 space-x-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300"
+            <div className="flex justify-between mt-6 space-x-3">
+              <Button
+                onClick={onSaveRouteForce}
+                className="bg-yellow-600 hover:bg-yellow-700"
               >
-                Отмена
-              </button>
-              <Button type="submit">
-                {mode === "edit" ? "Сохранить" : "Добавить"}
+                {mode === "edit" ? "Сохранить" : "Добавить"} в любом случае
               </Button>
+
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300"
+                >
+                  Отмена
+                </button>
+                <Button type="submit">
+                  {mode === "edit" ? "Сохранить" : "Добавить"}
+                </Button>
+              </div>
             </div>
           </form>
         </Form>

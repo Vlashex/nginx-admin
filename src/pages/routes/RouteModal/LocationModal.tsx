@@ -11,12 +11,14 @@ type Props = {
     value: LocationConfig | null
   ) => void;
   onSaveLocation: (value: LocationConfig) => void;
+  onSaveLocationForce: (value: LocationConfig) => void;
 };
 
 export function LocationModal({
   editing,
   onStartEditLocation,
   onSaveLocation,
+  onSaveLocationForce,
 }: Props) {
   if (!editing.value) return null;
 
@@ -106,13 +108,21 @@ export function LocationModal({
         </div>
 
         <div className="flex justify-end mt-6 space-x-3">
-          <button
-            onClick={() => onStartEditLocation(null, null)}
-            className="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300"
+          <Button
+            onClick={() => onSaveLocationForce(value)}
+            className="bg-yellow-600 hover:bg-yellow-700"
           >
-            Отмена
-          </button>
-          <Button onClick={() => onSaveLocation(value)}>Сохранить</Button>
+            Сохранить любом случае
+          </Button>
+          <div className="flex gap-4">
+            <button
+              onClick={() => onStartEditLocation(null, null)}
+              className="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300"
+            >
+              Отмена
+            </button>
+            <Button onClick={() => onSaveLocation(value)}>Сохранить</Button>
+          </div>
         </div>
       </div>
     </div>

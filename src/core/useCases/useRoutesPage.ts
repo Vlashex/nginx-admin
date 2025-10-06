@@ -68,6 +68,21 @@ export function useRoutesPage() {
     }
   });
 
+  const saveRouteForce = useCallback(async () => {
+    try {
+      const values = form.getValues();
+      if (ui.mode === "create" || !values.id) {
+        await ops.create(values as Route); // ❗ без валидации
+      } else {
+        const { id, ...rest } = values;
+        await ops.update(id, rest as Route);
+      }
+      closeModal();
+    } catch (err) {
+      console.error("Ошибка при saveRouteForce:", err);
+    }
+  }, [form, ui, ops, closeModal]);
+
   const addLocation = useCallback(() => {
     const loc = createLocation({ path: "/" as URLPath });
     const uiLoc: LocationConfig = {
@@ -118,6 +133,24 @@ export function useRoutesPage() {
     [form, ui]
   );
 
+  const saveLocationForce = useCallback(
+    (value: LocationConfig) => {
+      const current = form.getValues("locations") as LocationConfig[];
+      const next =
+        ui.locationEditing.index === null
+          ? (addLocationToRoute(current, value) as LocationConfig[])
+          : (updateLocationInRoute(
+              current,
+              ui.locationEditing.index!,
+              value
+            ) as LocationConfig[]);
+
+      form.setValue("locations", next);
+      ui.startEditLocation(null, null);
+    },
+    [form, ui]
+  );
+
   return {
     list,
     isLoading,
@@ -130,9 +163,11 @@ export function useRoutesPage() {
     openForEdit,
     closeModal,
     onSubmit,
+    saveRouteForce,
     addLocation,
     editLocation,
     deleteLocation,
     saveLocation,
+    saveLocationForce,
   };
 }

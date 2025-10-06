@@ -56,9 +56,9 @@ export function createAdvancedConfig(
     client_max_body_size: sizeUnit("1m"),
     keepalive_timeout: timeUnit("65s"),
     gzip: false,
-    gzip_types: "",
+    gzip_types: undefined,
     caching: false,
-    cache_valid: timeUnit("1s"),
+    cache_valid: undefined,
     ...overrides,
   };
 }
