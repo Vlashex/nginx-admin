@@ -8,9 +8,8 @@ import {
 } from "react-router-dom";
 import RoutesPage from "@/pages/routes/RoutesPage";
 
-// Автоматический выбор роутера в зависимости от окружения
-const isGhPages = import.meta.env.BASE_URL.includes("github.io");
-const Router = isGhPages ? HashRouter : BrowserRouter;
+const isProd = import.meta.env.MODE === "production";
+const Router = isProd ? HashRouter : BrowserRouter;
 
 function Sidebar({ isOpen }: { isOpen: boolean }) {
   return (

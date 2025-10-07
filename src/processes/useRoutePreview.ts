@@ -9,11 +9,9 @@ export function useRoutePreview(form: UseFormReturn<RouteInput>) {
   const values = useWatch({ control: form.control });
   return useMemo(() => {
     try {
-      console.log(values);
       const route = RouteSchema.parse(values);
       return generateConfigPreview(route);
-    } catch (err) {
-      console.error(err);
+    } catch {
       return "# Ошибка конфигурации";
     }
   }, [values]);

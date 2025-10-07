@@ -52,7 +52,6 @@ export function useRoutesPage() {
   }, [ops, ui]);
 
   const onSubmit = form.handleSubmit(async (values) => {
-    console.log(values);
     try {
       if (ui.mode === "create" || !values.id) {
         await ops.create(RouteSchema.parse(values));
@@ -76,8 +75,8 @@ export function useRoutesPage() {
         await ops.update(id, rest as Route);
       }
       closeModal();
-    } catch (err) {
-      console.error("Ошибка при saveRouteForce:", err);
+    } catch {
+      //
     }
   }, [form, ui, ops, closeModal]);
 

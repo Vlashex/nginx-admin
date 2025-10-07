@@ -12,8 +12,6 @@ export const validateForm = (
 ): Record<string, string> => {
   const errors: Record<string, string> = {};
 
-  console.log(formData);
-
   if (!formData.domain || !validateDomain(formData.domain)) {
     errors.domain = "Invalid domain format";
   }
