@@ -22,6 +22,11 @@ export default function RoutesPage() {
     deleteLocation,
     saveLocation,
     saveLocationForce,
+    removeRoute,
+    isSaving,
+    isRemoving,
+    isSavingLocation,
+    isRemovingLocation,
   } = useRoutesPage();
 
   return (
@@ -33,7 +38,8 @@ export default function RoutesPage() {
         onCreate={openForCreate}
         onEdit={openForEdit}
         onToggle={ops.toggle}
-        onRemove={ops.remove}
+        onRemove={removeRoute}
+        isRemoving={isRemoving}
       />
 
       <RouteModal
@@ -49,6 +55,8 @@ export default function RoutesPage() {
         onEditLocation={editLocation}
         onDeleteLocation={deleteLocation}
         preview={preview}
+        isSaving={isSaving}
+        isRemovingLocation={isRemovingLocation}
       />
 
       <LocationModal
@@ -56,6 +64,7 @@ export default function RoutesPage() {
         onStartEditLocation={ui.startEditLocation}
         onSaveLocation={saveLocation}
         onSaveLocationForce={saveLocationForce}
+        isSavingLocation={isSavingLocation}
       />
     </div>
   );

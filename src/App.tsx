@@ -7,6 +7,7 @@ import {
   Link,
 } from "react-router-dom";
 import RoutesPage from "@/pages/routes/RoutesPage";
+import { Toaster } from "sonner";
 
 const isProd = import.meta.env.MODE === "production";
 const Router = isProd ? HashRouter : BrowserRouter;
@@ -64,6 +65,7 @@ export default function App() {
   return (
     <Router>
       <div className="flex h-screen bg-gray-900">
+        <Toaster position="top-right" richColors />
         <Sidebar isOpen={sidebarOpen} />
         <div className="flex-1 p-6 overflow-y-auto">
           <Routes>

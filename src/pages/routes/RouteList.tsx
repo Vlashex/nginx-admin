@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Button } from "@/shared/ui-kit/button";
 import type { Route } from "@/core/entities/types";
+import { Loader2 } from "lucide-react";
 
 type RouteListProps = {
   list: Route[];
@@ -9,6 +11,7 @@ type RouteListProps = {
   onEdit: (route: Route) => void;
   onToggle: (id: string) => Promise<void | null>;
   onRemove: (id: string) => Promise<void | null>;
+  isRemoving: boolean;
 };
 
 export function RouteList({
@@ -19,7 +22,16 @@ export function RouteList({
   onEdit,
   onToggle,
   onRemove,
+  isRemoving,
 }: RouteListProps) {
+  // 🔹 Локальное состояние: какая строка в процессе удаления
+  const [activeRemoveId, setActiveRemoveId] = useState<string | null>(null);
+
+  // после завершения удаления сбрасываем состояние
+  if (!isRemoving && activeRemoveId !== null) {
+    setTimeout(() => setActiveRemoveId(null), 0);
+  }
+
   return (
     <div className="bg-gray-800 rounded-lg shadow p-4 text-gray-200">
       <div className="flex justify-between items-center mb-4">
@@ -60,24 +72,43 @@ export function RouteList({
                     {route.enabled ? "Активен" : "Отключен"}
                   </span>
                 </td>
-                <td className="px-6 py-4 space-x-2">
+                <td className="px-6 py-4 space-x-3 text-sm">
                   <button
                     onClick={() => onToggle(route.id)}
-                    className="text-yellow-400 hover:text-yellow-200"
+                    disabled={isRemoving}
+                    className="text-yellow-400 hover:text-yellow-200 disabled:opacity-60"
                   >
                     {route.enabled ? "Отключить" : "Включить"}
                   </button>
+
                   <button
                     onClick={() => onEdit(route)}
-                    className="text-blue-400 hover:text-blue-200"
+                    disabled={isRemoving}
+                    className="text-blue-400 hover:text-blue-200 disabled:opacity-60"
                   >
                     Редактировать
                   </button>
+
                   <button
-                    onClick={() => onRemove(route.id)}
-                    className="text-red-400 hover:text-red-200"
+                    onClick={() => {
+                      setActiveRemoveId(route.id);
+                      onRemove(route.id);
+                    }}
+                    disabled={isRemoving}
+                    className={`
+                      flex items-center justify-end w-28
+                      text-red-400 hover:text-red-200
+                      disabled:opacity-60
+                    `}
                   >
-                    Удалить
+                    {isRemoving && activeRemoveId === route.id ? (
+                      <>
+                        <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                        Удаление...
+                      </>
+                    ) : (
+                      <span className="ml-auto text-right w-full">Удалить</span>
+                    )}
                   </button>
                 </td>
               </tr>

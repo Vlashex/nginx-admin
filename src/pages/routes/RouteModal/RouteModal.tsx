@@ -8,6 +8,7 @@ import { BasicTab } from "./BasicTab";
 import { LocationsTab } from "./LocationsTab";
 import { AdvancedTab } from "./AdvancedTab";
 import { PreviewTab } from "./PreviewTab";
+import { Loader2 } from "lucide-react";
 
 type Props = {
   isOpen: boolean;
@@ -26,6 +27,9 @@ type Props = {
   onDeleteLocation: (index: number) => void;
 
   preview: string;
+
+  isSaving: boolean;
+  isRemovingLocation: boolean;
 };
 
 export function RouteModal({
@@ -41,6 +45,8 @@ export function RouteModal({
   onEditLocation,
   onDeleteLocation,
   preview,
+  isSaving,
+  isRemovingLocation,
 }: Props) {
   if (!isOpen) return null;
 
@@ -83,6 +89,7 @@ export function RouteModal({
                 onAdd={onAddLocation}
                 onEdit={onEditLocation}
                 onDelete={onDeleteLocation}
+                isRemovingLocation={isRemovingLocation}
               />
             )}
             {activeTab === "advanced" && <AdvancedTab form={form} />}
@@ -104,8 +111,17 @@ export function RouteModal({
                 >
                   Отмена
                 </button>
-                <Button type="submit">
-                  {mode === "edit" ? "Сохранить" : "Добавить"}
+                <Button disabled={isSaving}>
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Сохранение...
+                    </>
+                  ) : mode === "edit" ? (
+                    "Сохранить"
+                  ) : (
+                    "Добавить"
+                  )}
                 </Button>
               </div>
             </div>
