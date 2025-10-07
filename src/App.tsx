@@ -1,6 +1,16 @@
 import { useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import {
+  BrowserRouter,
+  HashRouter,
+  Routes,
+  Route,
+  Link,
+} from "react-router-dom";
 import RoutesPage from "@/pages/routes/RoutesPage";
+
+// Автоматический выбор роутера в зависимости от окружения
+const isGhPages = import.meta.env.BASE_URL.includes("github.io");
+const Router = isGhPages ? HashRouter : BrowserRouter;
 
 function Sidebar({ isOpen }: { isOpen: boolean }) {
   return (
@@ -51,6 +61,7 @@ function StatisticsPage() {
 
 export default function App() {
   const [sidebarOpen] = useState(true);
+
   return (
     <Router>
       <div className="flex h-screen bg-gray-900">
