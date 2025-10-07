@@ -2,7 +2,7 @@
   "name": "nginx-admin",
   "homepage": "https://github.com/Vlashex/nginx-admin",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,7 +13,7 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
-    "predeploy": "npm run build",
+    "predeploy": "pnpm run build",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
