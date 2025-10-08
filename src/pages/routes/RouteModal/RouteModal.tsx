@@ -10,6 +10,7 @@ import { AdvancedTab } from "./AdvancedTab";
 import { PreviewTab } from "./PreviewTab";
 import { Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { AnimatedTab } from "@/shared/ui-kit/AnimatedTab";
 
 type Props = {
   isOpen: boolean;
@@ -21,14 +22,10 @@ type Props = {
   onSubmit: React.FormEventHandler<HTMLFormElement>;
   onSaveRouteForce: () => Promise<void>;
   onClose: () => void;
-
-  // locations
   onAddLocation: () => void;
   onEditLocation: (index: number, value: LocationConfig) => void;
   onDeleteLocation: (index: number) => void;
-
   preview: string;
-
   isSaving: boolean;
   isRemovingLocation: boolean;
 };
@@ -99,18 +96,20 @@ export function RouteModal({
 
             <Form {...form}>
               <form onSubmit={onSubmit} className="space-y-4">
-                {activeTab === "basic" && <BasicTab form={form} />}
-                {activeTab === "locations" && (
-                  <LocationsTab
-                    form={form}
-                    onAdd={onAddLocation}
-                    onEdit={onEditLocation}
-                    onDelete={onDeleteLocation}
-                    isRemovingLocation={isRemovingLocation}
-                  />
-                )}
-                {activeTab === "advanced" && <AdvancedTab form={form} />}
-                {activeTab === "preview" && <PreviewTab preview={preview} />}
+                <AnimatedTab activeKey={activeTab}>
+                  {activeTab === "basic" && <BasicTab form={form} />}
+                  {activeTab === "locations" && (
+                    <LocationsTab
+                      form={form}
+                      onAdd={onAddLocation}
+                      onEdit={onEditLocation}
+                      onDelete={onDeleteLocation}
+                      isRemovingLocation={isRemovingLocation}
+                    />
+                  )}
+                  {activeTab === "advanced" && <AdvancedTab form={form} />}
+                  {activeTab === "preview" && <PreviewTab preview={preview} />}
+                </AnimatedTab>
 
                 <div className="flex justify-between mt-6 space-x-3">
                   <Button
