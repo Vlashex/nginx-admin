@@ -22,13 +22,12 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
-// 🕓 вспомогательная функция задержки
 const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 export function useRoutesPage() {
   const { list, isLoading, error } = useRoutesList();
-  const ops = useRouteOperations();
-  const ui = useRouteFormStore();
+  const routeOps = useRouteOperations();
+  const uiStore = useRouteFormStore();
 
   const [isSaving, setIsSaving] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
@@ -42,35 +41,38 @@ export function useRoutesPage() {
 
   const preview = useRoutePreview(form);
 
+  /** =======================
+   *  ROUTE ACTIONS
+   *  ======================= */
+
   const openForCreate = useCallback(() => {
-    ui.openForCreate();
+    uiStore.openForCreate();
     form.reset(createRoute());
-  }, [form, ui]);
+  }, [form, uiStore]);
 
   const openForEdit = useCallback(
     (route: Route) => {
-      ui.openForEdit();
+      uiStore.openForEdit();
       form.reset(route);
     },
-    [form, ui]
+    [form, uiStore]
   );
 
   const closeModal = useCallback(() => {
-    ui.closeModal();
-    ops.reset();
-  }, [ops, ui]);
+    uiStore.closeModal();
+    routeOps.reset();
+  }, [routeOps, uiStore]);
 
-  // 💾 Сохранение маршрута
   const onSubmit = form.handleSubmit(async (values) => {
     setIsSaving(true);
     try {
       await delay(3000);
-      if (ui.mode === "create" || !values.id) {
-        await ops.create(RouteSchema.parse(values));
+      if (uiStore.mode === "create" || !values.id) {
+        await routeOps.create(RouteSchema.parse(values));
         toast.success("Маршрут создан");
       } else {
         const { id, ...rest } = values;
-        await ops.update(id, RouteSchema.parse(rest));
+        await routeOps.update(id, RouteSchema.parse(rest));
         toast.success("Изменения сохранены");
       }
       closeModal();
@@ -81,18 +83,17 @@ export function useRoutesPage() {
     }
   });
 
-  // 💾 Сохранение маршрута (force)
   const saveRouteForce = useCallback(async () => {
     setIsSaving(true);
     try {
       await delay(3000);
       const values = form.getValues();
-      if (ui.mode === "create" || !values.id) {
-        await ops.create(values as Route);
+      if (uiStore.mode === "create" || !values.id) {
+        await routeOps.create(values as Route);
         toast.success("Маршрут создан");
       } else {
         const { id, ...rest } = values;
-        await ops.update(id, rest as Route);
+        await routeOps.update(id, rest as Route);
         toast.success("Изменения сохранены");
       }
       closeModal();
@@ -101,15 +102,26 @@ export function useRoutesPage() {
     } finally {
       setIsSaving(false);
     }
-  }, [form, ui, ops, closeModal]);
+  }, [form, uiStore, routeOps, closeModal]);
 
-  // 🗑️ Удаление маршрута
-  const removeRoute = useCallback(
+  const onToggle = useCallback(
+    async (id: string) => {
+      try {
+        await routeOps.toggle(id);
+        toast.success("Статус маршрута изменён");
+      } catch {
+        toast.error("Ошибка при изменении статуса");
+      }
+    },
+    [routeOps]
+  );
+
+  const onRemove = useCallback(
     async (id: string) => {
       setIsRemoving(true);
       try {
         await delay(3000);
-        await ops.remove(id);
+        await routeOps.remove(id);
         toast.success("Маршрут удалён");
       } catch {
         toast.error("Ошибка при удалении маршрута");
@@ -117,31 +129,40 @@ export function useRoutesPage() {
         setIsRemoving(false);
       }
     },
-    [ops]
+    [routeOps]
   );
 
-  // ⚙️ Работа с локациями
-  const addLocation = useCallback(() => {
+  /** =======================
+   *  LOCATION ACTIONS
+   *  ======================= */
+
+  const onAddLocation = useCallback(() => {
     const loc = createLocation({ path: "/" as URLPath });
     const uiLoc: LocationConfig = {
-      path: urlPath(loc.path || "/ad"),
+      path: urlPath(loc.path || "/"),
       proxy_pass: undefined,
       try_files: loc.try_files || "",
       index: loc.index || "",
       extra_directives: loc.extra_directives || "",
     };
-    ui.startEditLocation(null, uiLoc);
-  }, [ui]);
+    uiStore.startEditLocation(null, uiLoc);
+  }, [uiStore]);
 
-  const editLocation = useCallback(
+  const onEditLocation = useCallback(
     (index: number, value: LocationConfig) => {
-      ui.startEditLocation(index, value);
+      uiStore.startEditLocation(index, value);
     },
-    [ui]
+    [uiStore]
   );
 
-  // 🗑️ Удаление локации
-  const deleteLocation = useCallback(
+  const startEditLocation = useCallback(
+    (index: number | null, value: LocationConfig | null) => {
+      uiStore.startEditLocation(index, value);
+    },
+    [uiStore]
+  );
+
+  const onDeleteLocation = useCallback(
     async (index: number) => {
       setIsRemovingLocation(true);
       try {
@@ -159,8 +180,7 @@ export function useRoutesPage() {
     [form]
   );
 
-  // 💾 Сохранение локации
-  const saveLocation = useCallback(
+  const onSaveLocation = useCallback(
     async (value: LocationConfig) => {
       setIsSavingLocation(true);
       try {
@@ -173,16 +193,16 @@ export function useRoutesPage() {
 
         const current = form.getValues("locations") as LocationConfig[];
         const next =
-          ui.locationEditing.index === null
+          uiStore.locationEditing.index === null
             ? (addLocationToRoute(current, value) as LocationConfig[])
             : (updateLocationInRoute(
                 current,
-                ui.locationEditing.index!,
+                uiStore.locationEditing.index!,
                 value
               ) as LocationConfig[]);
 
         form.setValue("locations", next);
-        ui.startEditLocation(null, null);
+        uiStore.startEditLocation(null, null);
         toast.success("Локация сохранена");
       } catch {
         toast.error("Ошибка при сохранении локации");
@@ -190,27 +210,26 @@ export function useRoutesPage() {
         setIsSavingLocation(false);
       }
     },
-    [form, ui]
+    [form, uiStore]
   );
 
-  // 💾 Сохранение локации (force)
-  const saveLocationForce = useCallback(
+  const onSaveLocationForce = useCallback(
     async (value: LocationConfig) => {
       setIsSavingLocation(true);
       try {
         await delay(3000);
         const current = form.getValues("locations") as LocationConfig[];
         const next =
-          ui.locationEditing.index === null
+          uiStore.locationEditing.index === null
             ? (addLocationToRoute(current, value) as LocationConfig[])
             : (updateLocationInRoute(
                 current,
-                ui.locationEditing.index!,
+                uiStore.locationEditing.index!,
                 value
               ) as LocationConfig[]);
 
         form.setValue("locations", next);
-        ui.startEditLocation(null, null);
+        uiStore.startEditLocation(null, null);
         toast.success("Локация сохранена");
       } catch {
         toast.error("Ошибка при сохранении локации");
@@ -218,35 +237,49 @@ export function useRoutesPage() {
         setIsSavingLocation(false);
       }
     },
-    [form, ui]
+    [form, uiStore]
   );
 
+  /** =======================
+   *  Публичный интерфейс страницы
+   *  ======================= */
   return {
     list,
     isLoading,
     error,
-    ops,
-    ui,
     form,
     preview,
-
-    // 🔄 состояния
     isSaving,
     isRemoving,
     isSavingLocation,
     isRemovingLocation,
 
-    // функции
-    openForCreate,
-    openForEdit,
-    closeModal,
+    // handlers
+    onCreate: openForCreate,
+    onEdit: openForEdit,
+    onToggle,
+    onRemove,
     onSubmit,
-    saveRouteForce,
-    removeRoute,
-    addLocation,
-    editLocation,
-    deleteLocation,
-    saveLocation,
-    saveLocationForce,
+    onSaveForce: saveRouteForce,
+    onClose: closeModal,
+
+    // location
+    location: {
+      editing: uiStore.locationEditing,
+      onAdd: onAddLocation,
+      onEdit: onEditLocation,
+      onStartEdit: startEditLocation,
+      onDelete: onDeleteLocation,
+      onSave: onSaveLocation,
+      onSaveForce: onSaveLocationForce,
+    },
+
+    // modal state
+    modal: {
+      isOpen: uiStore.modalOpen,
+      mode: uiStore.mode,
+      activeTab: uiStore.activeTab,
+      setActiveTab: uiStore.setActiveTab,
+    },
   };
 }

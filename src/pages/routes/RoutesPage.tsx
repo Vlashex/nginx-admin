@@ -1,4 +1,4 @@
-import { useRoutesPage } from "@/core/useCases/useRoutesPage";
+import { useRoutesPage } from "@/pages/routes/model/useRoutesPage";
 import { RouteList } from "./RouteList";
 import { RouteModal } from "./RouteModal/RouteModal";
 import { LocationModal } from "./RouteModal/LocationModal";
@@ -8,25 +8,21 @@ export default function RoutesPage() {
     list,
     isLoading,
     error,
-    ops,
-    ui,
     form,
     preview,
-    openForCreate,
-    openForEdit,
-    closeModal,
-    onSubmit,
-    saveRouteForce,
-    addLocation,
-    editLocation,
-    deleteLocation,
-    saveLocation,
-    saveLocationForce,
-    removeRoute,
     isSaving,
     isRemoving,
     isSavingLocation,
     isRemovingLocation,
+    onCreate,
+    onEdit,
+    onToggle,
+    onRemove,
+    onSubmit,
+    onSaveForce,
+    onClose,
+    location,
+    modal,
   } = useRoutesPage();
 
   return (
@@ -35,35 +31,35 @@ export default function RoutesPage() {
         list={list}
         isLoading={isLoading}
         error={error}
-        onCreate={openForCreate}
-        onEdit={openForEdit}
-        onToggle={ops.toggle}
-        onRemove={removeRoute}
+        onCreate={onCreate}
+        onEdit={onEdit}
+        onToggle={onToggle}
+        onRemove={onRemove}
         isRemoving={isRemoving}
       />
 
       <RouteModal
-        isOpen={ui.modalOpen}
-        mode={ui.mode}
-        activeTab={ui.activeTab}
-        setActiveTab={ui.setActiveTab}
+        isOpen={modal.isOpen}
+        mode={modal.mode}
+        activeTab={modal.activeTab}
+        setActiveTab={modal.setActiveTab}
         form={form}
         onSubmit={onSubmit}
-        onSaveRouteForce={saveRouteForce}
-        onClose={closeModal}
-        onAddLocation={addLocation}
-        onEditLocation={editLocation}
-        onDeleteLocation={deleteLocation}
+        onSaveRouteForce={onSaveForce}
+        onClose={onClose}
+        onAddLocation={location.onAdd}
+        onEditLocation={location.onEdit}
+        onDeleteLocation={location.onDelete}
         preview={preview}
         isSaving={isSaving}
         isRemovingLocation={isRemovingLocation}
       />
 
       <LocationModal
-        editing={ui.locationEditing}
-        onStartEditLocation={ui.startEditLocation}
-        onSaveLocation={saveLocation}
-        onSaveLocationForce={saveLocationForce}
+        editing={location.editing}
+        onStartEditLocation={location.onStartEdit}
+        onSaveLocation={location.onSave}
+        onSaveLocationForce={location.onSaveForce}
         isSavingLocation={isSavingLocation}
       />
     </div>
