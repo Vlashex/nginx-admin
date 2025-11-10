@@ -17,9 +17,9 @@ export function AnimatedTab({ activeKey, children }: Props) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
         transition={{
-          duration: 0.2,
+          duration: 0.08,
           ease: "easeOut",
-          layout: { duration: 1, ease: "easeIn" },
+          layout: { duration: 0.2, ease: "easeIn" },
         }}
       >
         {children}
