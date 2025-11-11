@@ -1,4 +1,4 @@
-// infrastructure/repositories/LocalStorageRouteRepository.ts
+// core/repositories/LocalStorageRouteRepository.ts
 import type { RouteRepository } from "@/core/repositories/RouteRepository";
 import type { Route } from "@/core/entities/types";
 
