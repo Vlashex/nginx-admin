@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "skipLibCheck": true,
+    "moduleResolution": "Bundler",
+    "target": "ES2022",
+    "module": "ESNext",
+    "declaration": true,
+    "declarationMap": true,
+    "composite": true,
+    "paths": {
+      "@vlashex/core": ["./packages/core/src"],
+      "@vlashex/core/*": ["./packages/core/src/*"],
+      "@vlashex/shared-store": ["./packages/shared-store/src"],
+      "@vlashex/shared-store/*": ["./packages/shared-store/src/*"],
+      "@vlashex/shared": ["./packages/shared/src"],
+      "@vlashex/shared/*": ["./packages/shared/src/*"]
+    },
+    "baseUrl": "."
+  },
+  "include": ["packages/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

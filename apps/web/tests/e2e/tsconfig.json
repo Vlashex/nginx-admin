@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.app.json",
+  "compilerOptions": {
+    "types": ["@playwright/test", "node", "vite/client"],
+    "paths": {
+      "@/*": ["../../src/*"],
+      "@vlashex/shared/*": ["../../src/shared/*"],
+      "@/processes/*": ["../../src/processes/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx"]
+}
