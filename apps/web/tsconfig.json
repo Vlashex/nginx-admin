@@ -1,14 +1,6 @@
 {
   "extends": "../../tsconfig.base.json",
   "files": [],
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@vlashex/core": ["../../packages/core/*"],
-      "@vlashex/shared/*": ["../../packages/shared/*"],
-      "@vlashex/shared-store/*": ["../../packages/shared-store/*"]
-    }
-  },
   "references": [
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" }

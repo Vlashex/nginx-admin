@@ -9,10 +9,6 @@ export default defineConfig({
         __dirname,
         "../../packages/shared"
       ),
-      "@vlashex/shared-store": path.resolve(
-        __dirname,
-        "../../packages/shared-store"
-      ),
     },
   },
   test: {
