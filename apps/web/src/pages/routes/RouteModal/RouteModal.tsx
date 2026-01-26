@@ -1,16 +1,16 @@
 import * as React from "react";
-import type { ActiveTab } from "@vlashex/shared/src/store/useRouteFormStore";
+import type { ActiveTab } from "@vlashex/shared/store";
 import type { UseFormReturn } from "react-hook-form";
-import { Form } from "@vlashex/shared/src/ui-kit/form";
-import { Button } from "@vlashex/shared/src/ui-kit/button";
-import type { LocationConfig } from "@vlashex/core/entities/types";
+import { Form } from "@vlashex/shared/ui-kit";
+import { Button } from "@vlashex/shared/ui-kit";
+import type { LocationConfig } from "@vlashex/core";
 import { BasicTab } from "./BasicTab";
 import { LocationsTab } from "./LocationsTab";
 import { AdvancedTab } from "./AdvancedTab";
 import { PreviewTab } from "./PreviewTab";
 import { Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { AnimatedTab } from "@vlashex/shared/src/ui-kit/AnimatedTab";
+import { AnimatedTab } from "@vlashex/shared/ui-kit";
 
 type Props = {
   isOpen: boolean;

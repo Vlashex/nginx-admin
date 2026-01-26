@@ -1,7 +1,7 @@
 import { useMemo } from "react";
-import { generateConfigPreview } from "@vlashex/core/services/ConfigGenerator";
+import { generateConfigPreview } from "@vlashex/core";
 import type { UseFormReturn } from "react-hook-form";
-import { RouteSchema, type RouteInput } from "@vlashex/core/entities/types";
+import { RouteSchema, type RouteInput } from "@vlashex/core";
 
 import { useWatch } from "react-hook-form";
 

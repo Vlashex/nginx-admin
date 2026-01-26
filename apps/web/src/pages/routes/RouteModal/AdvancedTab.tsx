@@ -5,8 +5,8 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-} from "@vlashex/shared/src/ui-kit/form";
-import { Input } from "@vlashex/shared/src/ui-kit/input";
+} from "@vlashex/shared/ui-kit";
+import { Input } from "@vlashex/shared/ui-kit";
 
 type Props<T extends FieldValues = FieldValues> = {
   form: UseFormReturn<T>;

@@ -5,7 +5,7 @@ import {
   validateForm,
   //   validateLocation,
   createLocation,
-} from "@/core/useCases/routeForm";
+} from "@vlashex/core";
 import type {
   Route,
   LocationConfig,
@@ -15,7 +15,7 @@ import type {
   SizeUnit,
   TimeUnit,
   URLPath,
-} from "@/core/entities/types";
+} from "@vlashex/core";
 
 interface RouteFormState {
   isEditing: boolean;

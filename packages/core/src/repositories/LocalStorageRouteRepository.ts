@@ -8,7 +8,8 @@ export class LocalStorageRouteRepository implements RouteRepository {
   async save(route: Route): Promise<void> {
     const all = await this.loadAll();
     all.set(route.id, route);
-    await this.saveAll(all);
+    const next = new Map(all);
+    await this.saveAll(next);
   }
 
   async findById(id: string): Promise<Route | null> {
@@ -24,21 +25,24 @@ export class LocalStorageRouteRepository implements RouteRepository {
   async delete(id: string): Promise<void> {
     const all = await this.loadAll();
     all.delete(id);
-    await this.saveAll(all);
+    const next = new Map(all);
+    await this.saveAll(next);
   }
 
   async saveAll(routes: Map<string, Route>): Promise<void> {
-    const serialized = JSON.stringify(Array.from(routes.entries()));
-    localStorage.setItem(this.key, serialized);
+    localStorage.setItem(
+      this.key,
+      JSON.stringify(Array.from(routes.entries()))
+    );
   }
 
   async loadAll(): Promise<Map<string, Route>> {
-    const data = localStorage.getItem(this.key);
-    if (!data) return new Map();
+    const raw = localStorage.getItem(this.key);
+    if (!raw) return new Map();
 
     try {
-      const parsed = JSON.parse(data) as [string, Route][];
-      return new Map(parsed);
+      const entries = JSON.parse(raw) as [string, Route][];
+      return new Map(entries);
     } catch {
       return new Map();
     }

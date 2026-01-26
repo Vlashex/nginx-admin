@@ -3,12 +3,12 @@ import {
   validateForm,
   validateLocation,
   createLocation,
-} from "@vlashex/core/useCases/routeForm";
+} from "@vlashex/core";
 import type {
   RouteFormValues,
   LocationFormValues,
-} from "@vlashex/shared/src/lib/formAdapters";
-import type { URLPath, Domain } from "@vlashex/core/entities/types";
+} from "@vlashex/shared";
+import type { URLPath, Domain } from "@vlashex/core";
 
 describe("RouteFormUseCases.validateForm", () => {
   it("detects validation errors for domain/port/root", () => {

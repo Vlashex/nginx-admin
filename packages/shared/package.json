@@ -4,44 +4,53 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    },
-    "./ui-kit/*": {
-      "types": "./dist/ui-kit/*.d.ts",
-      "default": "./dist/ui-kit/*.js"
-    },
-    "./store/*": {
-      "types": "./dist/store/*.d.ts",
-      "default": "./dist/store/*.js"
-    },
-    "./lib/*": {
-      "types": "./dist/lib/*.d.ts",
-      "default": "./dist/lib/*.js"
-    }
+  ".": {
+    "types": "./dist/index.d.ts",
+    "import": "./dist/index.js"
   },
+
+  "./lib": {
+    "types": "./dist/lib/index.d.ts",
+    "import": "./dist/lib/index.js"
+  },
+
+  "./store": {
+    "types": "./dist/store/index.d.ts",
+    "import": "./dist/store/index.js"
+  },
+
+  "./ui-kit": {
+    "types": "./dist/ui-kit/index.d.ts",
+    "import": "./dist/ui-kit/index.js"
+  }
+  },
+
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -b tsconfig.build.json",
     "clean": "rimraf dist"
   },
-    "dependencies": {
-      "@vlashex/core": "workspace:*",
-      "zustand": "^5.0.8",
-      "react": "^19.1.1",
-      "react-hook-form": "^7.62.0",
-      "@radix-ui/react-label": "^2.1.7",
-      "@radix-ui/react-select": "^2.2.6",
-      "@radix-ui/react-slot": "^1.2.3",
-      "clsx": "^2.1.1",
-      "tailwind-merge": "^3.3.1",
-      "class-variance-authority": "^0.7.1",
-      "framer-motion": "^12.23.22"
-    },
+  "dependencies": {
+    "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@vlashex/core": "workspace:*",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.23.22",
+    "lucide-react": "^0.544.0",
+    "react": "^19.1.1",
+    "react-hook-form": "^7.62.0",
+    "tailwind-merge": "^3.3.1",
+    "zustand": "^5.0.8"
+  },
   "devDependencies": {
-    "typescript": "^5.6.3",
-    "rimraf": "^6.0.1"
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.6.3"
   }
 }

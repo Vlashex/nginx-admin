@@ -1,10 +1,10 @@
 import { useState } from "react";
 import type { FieldValues, UseFormReturn } from "react-hook-form";
-import { Button } from "@vlashex/shared/src/ui-kit/button";
+import { Button } from "@vlashex/shared/ui-kit";
 import {
   LocationConfigSchema,
   type LocationConfig,
-} from "@vlashex/core/entities/types";
+} from "@vlashex/core";
 import { Loader2 } from "lucide-react";
 
 type Props<T extends FieldValues = FieldValues> = {

@@ -1,12 +1,18 @@
 import { defineConfig } from "vitest/config";
-import { resolve } from "path";
+import path from "node:path";
 
 export default defineConfig({
   resolve: {
     alias: {
-      "@": resolve(__dirname, "./src"),
-      "@vlashex/shared/src": resolve(__dirname, "./src/shared"),
-      "@/processes": resolve(__dirname, "./src/processes"),
+      "@vlashex/core": path.resolve(__dirname, "../../packages/core"),
+      "@vlashex/shared": path.resolve(
+        __dirname,
+        "../../packages/shared"
+      ),
+      "@vlashex/shared-store": path.resolve(
+        __dirname,
+        "../../packages/shared-store"
+      ),
     },
   },
   test: {

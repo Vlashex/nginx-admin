@@ -6,19 +6,19 @@ import {
   addLocationToRoute,
   updateLocationInRoute,
   removeLocation,
-} from "@vlashex/core/useCases/routeForm";
-import { useRouteOperations } from "@/processes/useRouteOperations";
-import { useRouteFormStore } from "@vlashex/shared/src/store/useRouteFormStore";
-import { useRoutePreview } from "@/processes/useRoutePreview";
-import { useRoutesList } from "@/processes/useRoutesList";
-import { createRoute, urlPath } from "@vlashex/shared/src/lib/factories";
+} from "@vlashex/core";
+import { useRouteOperations } from "../../../processes/useRouteOperations";
+import { useRouteFormModalStore } from "@vlashex/shared/store";
+import { useRoutePreview } from "../../../processes/useRoutePreview";
+import { useRoutesList } from "../../../processes/useRoutesList";
+import { createRoute, urlPath } from "@vlashex/shared/lib";
 import {
   RouteSchema,
   type LocationConfig,
   type Route,
   type RouteInput,
   type URLPath,
-} from "@vlashex/core/entities/types";
+} from "@vlashex/core";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
@@ -27,7 +27,7 @@ const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 export function useRoutesPage() {
   const { list, isLoading, error } = useRoutesList();
   const routeOps = useRouteOperations();
-  const uiStore = useRouteFormStore();
+  const uiStore = useRouteFormModalStore();
 
   const [isSaving, setIsSaving] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);

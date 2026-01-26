@@ -29,29 +29,6 @@
 
 #### 2.1 Использование алиасов `@/core` и `@/shared` в packages
 **Проблема:** В пакетах используются алиасы вида `@/core`, `@/shared` вместо workspace-импортов `@vlashex/core`, `@vlashex/shared`.
-**Где:** 
-- `packages/shared/src/store/slices/routesSlice.ts` (строка 8-11)
-- `packages/shared/src/store/adapters/RouteRepositoryAdapter.ts` (строка 2-3)
-- `packages/shared/src/store/repositoryHooks.ts` (строка 1-3)
-- `packages/shared/src/lib/factories.ts` (строка 18)
-- `packages/shared/src/store/useRouteFormStore.ts` (строка 1)
-- И другие файлы в `packages/shared/src`
-
-**Пример проблемы:**
-```typescript
-// ❌ Неправильно
-import { LocalStorageRouteRepository } from "@/core/repositories/LocalStorageRouteRepository";
-import type { RouteRepository } from "@/core/repositories/RouteRepository";
-
-// ✅ Правильно
-import { LocalStorageRouteRepository } from "@vlashex/shared-store";
-import type { RouteRepository } from "@vlashex/core/repositories/RouteRepository";
-```
-
-**Решение:** 
-1. Заменить все алиасы `@/core` на `@vlashex/core`
-2. Заменить все алиасы `@/shared` на `@vlashex/shared`
-3. Удалить алиасы из `tsconfig.base.json` (оставить только для apps)
 
 #### 2.2 Отсутствие `tsconfig.json` в packages
 **Проблема:** В пакетах есть только `tsconfig.build.json`, но нет `tsconfig.json` для разработки.
@@ -130,9 +107,9 @@ async loadAll(): Promise<Map<string, Route>> {
 **Решение:** Удалить файл из `core` и обновить все импорты.
 
 #### 4.3 Использование LocalStorageRouteRepository из core в shared
-**Проблема:** В `packages/shared/src/store/slices/routesSlice.ts` импортируется `LocalStorageRouteRepository` из `@/core/repositories/LocalStorageRouteRepository`, но должен импортироваться из `@vlashex/shared-store`.
+**Проблема:** В `packages/shared/src/store/slices/routesSlice.ts` импортируется `LocalStorageRouteRepository` из `@/core/repositories/LocalStorageRouteRepository`, но должен импортироваться из `@vlashex/shared-store/src/LocalStorageRouteRepository`.
 **Где:** `packages/shared/src/store/slices/routesSlice.ts` (строка 11)
-**Решение:** Заменить импорт на `import { LocalStorageRouteRepository } from "@vlashex/shared-store";`
+**Решение:** Заменить импорт на `import { LocalStorageRouteRepository } from "@vlashex/shared-store/src/LocalStorageRouteRepository";`
 
 ---
 

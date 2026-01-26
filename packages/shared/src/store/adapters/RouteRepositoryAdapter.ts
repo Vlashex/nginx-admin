@@ -1,6 +1,6 @@
 // store/adapters/RouteRepositoryAdapter.ts
-import type { RouteRepository } from "@/core/repositories/RouteRepository";
-import type { Route } from "@/core/entities/types";
+import type { RouteRepository } from "@vlashex/core";
+import type { Route } from "@vlashex/core";
 
 interface State {
   routes: Map<string, Route>;

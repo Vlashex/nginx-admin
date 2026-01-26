@@ -6,7 +6,7 @@ import {
   Route,
   Link,
 } from "react-router-dom";
-import RoutesPage from "@/pages/routes/RoutesPage";
+import RoutesPage from "./pages/routes/RoutesPage";
 import { Toaster } from "sonner";
 
 const isProd = import.meta.env.MODE === "production";

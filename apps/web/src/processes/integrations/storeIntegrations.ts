@@ -4,8 +4,8 @@ import {
   useLogsStore,
   useRoutesStore,
   useRouteFormStore,
-} from "@vlashex/shared/src/store/slices";
-import { IntegrationService } from "@vlashex/core/services/IntegrationService";
+} from "@vlashex/shared/store";
+import { IntegrationService } from "@vlashex/core";
 
 // Подписка на изменения статуса сервера для логирования
 useServerStore.subscribe((state, prevState) => {

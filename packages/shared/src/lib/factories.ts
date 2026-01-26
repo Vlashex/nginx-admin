@@ -15,7 +15,7 @@ import type {
   LogSource,
   ServerState,
   ServerStatus,
-} from "@/core/entities/types";
+} from "@vlashex/core";
 import { createBranded } from "./createBranded";
 
 // ✅ брендированные

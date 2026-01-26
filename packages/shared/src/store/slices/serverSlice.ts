@@ -1,8 +1,8 @@
 // store/slices/serverSlice.ts
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import { ServerUseCases } from "@/core/useCases/server";
-import type { ServerState, ServerStatus } from "@/core/entities/types";
+import { ServerUseCases } from "@vlashex/core";
+import type { ServerState, ServerStatus } from "@vlashex/core";
 
 interface ServerActions {
   toggleStatus: (status?: ServerStatus) => void;

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { LogUseCases } from "@vlashex/core/useCases/logs";
-import type { LogEntry } from "@vlashex/core/entities/types";
+import { LogUseCases } from "@vlashex/core";
+import type { LogEntry } from "@vlashex/core";
 
 const sampleLogs = (): LogEntry[] => {
   const baseTime = new Date("2024-01-01T00:00:00Z").getTime();

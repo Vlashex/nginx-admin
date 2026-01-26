@@ -6,6 +6,6 @@ export interface RouteRepository {
   findById(id: string): Promise<Route | null>;
   findAll(): Promise<Route[]>;
   delete(id: string): Promise<void>;
-  // saveAll(routes: Map<string, Route>): Promise<void>;
-  // loadAll(): Promise<Map<string, Route>>;
+  saveAll(routes: Map<string, Route>): Promise<void>;
+  loadAll(): Promise<Map<string, Route>>;
 }

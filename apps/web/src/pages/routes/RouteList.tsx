@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Button } from "@vlashex/shared/src/ui-kit/button";
-import type { Route } from "@vlashex/core/entities/types";
+import { Button } from "@vlashex/shared/ui-kit";
+import type { Route } from "@vlashex/core";
 import { Loader2 } from "lucide-react";
 
 type RouteListProps = {

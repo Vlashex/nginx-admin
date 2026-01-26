@@ -1,5 +1,5 @@
-import type { Route } from "@vlashex/core/src/entities/types";
-import type { RouteRepository } from "@vlashex/core/src/repositories/RouteRepository";
+import type { Route } from "@vlashex/core";
+import type { RouteRepository } from "@vlashex/core";
 
 type PersistedRoute = Omit<Route, "metadata"> & {
   metadata?: Route["metadata"] extends infer M
@@ -75,5 +75,21 @@ export class LocalStorageRouteRepository implements RouteRepository {
     const all = await this.findAll();
     const next = all.filter((r) => r.id !== id);
     localStorage.setItem(this.key, JSON.stringify(next.map(serialize)));
+  }
+
+  async saveAll(routes: Map<string, Route>): Promise<void> {
+    const serialized = JSON.stringify(Array.from(routes.entries()));
+    localStorage.setItem(this.key, serialized);
+  }
+
+  async loadAll(): Promise<Map<string, Route>> {
+    const data = localStorage.getItem(this.key);
+    if (!data) return new Map();
+    try {
+      const parsed = JSON.parse(data) as [string, Route][];
+      return new Map(parsed);
+    } catch {
+      return new Map();
+    }
   }
 }

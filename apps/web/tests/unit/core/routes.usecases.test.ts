@@ -3,10 +3,10 @@ import {
   createRoute,
   updateRoute,
   toggleRouteStatus,
-} from "@vlashex/core/useCases/routes";
-import type { Route } from "@vlashex/core/entities/types";
-import type { RouteRepository } from "@vlashex/core/repositories/RouteRepository";
-import type { RouteFormValues } from "@vlashex/shared/src/lib/formAdapters";
+} from "@vlashex/core";
+import type { Route } from "@vlashex/core";
+import type { RouteRepository } from "@vlashex/core";
+import type { RouteFormValues } from "@vlashex/shared";
 
 const makeRepo = () => {
   const memory = new Map<string, Route>();

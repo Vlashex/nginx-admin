@@ -24,3 +24,9 @@ dist-ssr
 *.sw?
 
 test-results/
+
+# build artifacts in src (на всякий случай)
+packages/**/src/**/*.js
+packages/**/src/**/*.d.ts
+packages/**/src/**/*.d.ts.map
+packages/**/src/**/*.js.map

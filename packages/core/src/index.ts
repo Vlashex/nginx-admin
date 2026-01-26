@@ -1,10 +1,27 @@
 export * from "./entities/types";
 export * from "./repositories/RouteRepository";
 export * from "./repositories/LogRepository";
+export * from "./repositories/LocalStorageRouteRepository"
 export * from "./services/ConfigGenerator";
 export * from "./services/IntegrationService";
 export * from "./useCases/logs";
 export * from "./useCases/routeForm";
 export * from "./useCases/routes";
 export * from "./useCases/server";
-export * from "./utils/validators";
+export {
+  validateDomain,
+  validatePort,
+  validateUnixPath,
+  validateURLPath,
+  validateLocation as validateLocationSchema,
+  validateSizeUnit,
+  validateTimeUnit,
+  validateAdvancedConfig,
+  validateLogLevel,
+  validateLogSource,
+  validateLogEntry,
+  validateLogFilters,
+  validateServerStatus,
+  validateServerState,
+  validateRoute,
+} from "./utils/validators";

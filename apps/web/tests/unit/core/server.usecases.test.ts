@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ServerUseCases } from "@vlashex/core/useCases/server";
+import { ServerUseCases } from "@vlashex/core";
 
 describe("ServerUseCases.toggleStatus", () => {
   it("toggles from stopped to running when newStatus not provided", () => {

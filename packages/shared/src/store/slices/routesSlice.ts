@@ -5,10 +5,10 @@ import {
   createRoute,
   updateRoute,
   toggleRouteStatus,
-} from "@/core/useCases/routes";
-import type { RouteRepository } from "@/core/repositories/RouteRepository";
-import type { Route } from "@/core/entities/types";
-import { LocalStorageRouteRepository } from "@/core/repositories/LocalStorageRouteRepository";
+} from "@vlashex/core";
+import type { RouteRepository } from "@vlashex/core";
+import type { Route } from "@vlashex/core";
+import { LocalStorageRouteRepository } from "@vlashex/core";
 
 interface RoutesState {
   routes: Map<string, Route>;

@@ -1,8 +1,8 @@
 // store/slices/logsSlice.ts
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import { LogUseCases } from "@/core/useCases/logs";
-import type { LogEntry, LogFilters } from "@/core/entities/types";
+import { LogUseCases } from "@vlashex/core";
+import type { LogEntry, LogFilters } from "@vlashex/core";
 
 interface LogsState {
   logs: LogEntry[];

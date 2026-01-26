@@ -1,12 +1,12 @@
 import { useState, useCallback } from "react";
-import { useRoutesRepository } from "@vlashex/shared/src/store/repositoryHooks";
-import { useRoutesStore } from "@vlashex/shared/src/store/slices";
+import { useRoutesRepository } from "@vlashex/shared/store";
+import { useRoutesStore } from "@vlashex/shared/store";
 import {
   createRoute,
   updateRoute,
   toggleRouteStatus,
-} from "@vlashex/core/useCases/routes";
-import type { Route } from "@vlashex/core/entities/types";
+} from "@vlashex/core";
+import type { Route } from "@vlashex/core";
 
 export function useRouteOperations() {
   const repository = useRoutesRepository();

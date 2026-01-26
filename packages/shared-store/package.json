@@ -6,7 +6,8 @@
   "types": "./dist/index.d.ts",
   "files": ["dist"],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -b tsconfig.build.json",
+    "clean:src": "rimraf --glob \"src/**/*.js\" \"src/**/*.d.ts\" \"src/**/*.d.ts.map\" \"src/**/*.js.map\"",
     "clean": "rimraf dist"
   },
   "dependencies": {

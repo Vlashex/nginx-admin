@@ -1,4 +1,4 @@
-import { useRoutesStore } from "@vlashex/shared/src/store/slices";
+import { useRoutesStore } from "@vlashex/shared/store";
 import { useEffect, useMemo } from "react";
 
 export function useRoutesList() {

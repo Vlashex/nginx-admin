@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { Input } from "@vlashex/shared/src/ui-kit/input";
-import { Button } from "@vlashex/shared/src/ui-kit/button";
-import { domain, urlPath } from "@vlashex/shared/src/lib/factories";
-import type { LocationConfig } from "@vlashex/core/entities/types";
+import { useState, type ChangeEvent } from "react";
+import { Input } from "@vlashex/shared/ui-kit";
+import { Button } from "@vlashex/shared/ui-kit";
+import { domain, urlPath } from "@vlashex/shared/lib";
+import type { LocationConfig } from "@vlashex/core";
 import { Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -64,7 +64,7 @@ export function LocationModal({
                 </label>
                 <Input
                   value={value.path}
-                  onChange={(e) =>
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
                     onStartEditLocation(editing.index, {
                       ...value,
                       path: urlPath(e.target.value),
@@ -79,7 +79,7 @@ export function LocationModal({
                 </label>
                 <Input
                   value={value.proxy_pass || ""}
-                  onChange={(e) =>
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
                     onStartEditLocation(editing.index, {
                       ...value,
                       proxy_pass: domain(e.target.value),
@@ -94,7 +94,7 @@ export function LocationModal({
                 </label>
                 <Input
                   value={value.try_files || ""}
-                  onChange={(e) =>
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
                     onStartEditLocation(editing.index, {
                       ...value,
                       try_files: e.target.value,
@@ -109,7 +109,7 @@ export function LocationModal({
                 </label>
                 <Input
                   value={value.index || ""}
-                  onChange={(e) =>
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
                     onStartEditLocation(editing.index, {
                       ...value,
                       index: e.target.value,
@@ -125,7 +125,7 @@ export function LocationModal({
                 <textarea
                   className="w-full h-20 p-2 border rounded-md font-mono text-sm"
                   value={value.extra_directives || ""}
-                  onChange={(e) =>
+                  onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
                     onStartEditLocation(editing.index, {
                       ...value,
                       extra_directives: e.target.value,

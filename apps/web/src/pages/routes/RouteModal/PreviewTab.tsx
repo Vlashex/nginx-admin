@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button } from "@vlashex/shared/src/ui-kit/button";
+import { Button } from "@vlashex/shared/ui-kit";
 import { toast } from "sonner";
 import { Check, Copy } from "lucide-react";
 

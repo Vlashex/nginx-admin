@@ -1,4 +1,4 @@
-import { useRoutesPage } from "@/pages/routes/model/useRoutesPage";
+import { useRoutesPage } from "./model/useRoutesPage";
 import { RouteList } from "./RouteList";
 import { RouteModal } from "./RouteModal/RouteModal";
 import { LocationModal } from "./RouteModal/LocationModal";

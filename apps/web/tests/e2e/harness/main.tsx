@@ -4,9 +4,8 @@ import {
   useLogsStore,
   useRoutesStore,
   useRouteFormStore,
-} from "@vlashex/shared/src/store/slices";
-import "@/processes/integrations/storeIntegrations";
-import { generateConfigPreview } from "@vlashex/core/services/ConfigGenerator";
+} from "@vlashex/shared/store";
+import { generateConfigPreview } from "@vlashex/core";
 
 // Expose core API early at module scope so it's available before React renders
 // @ts-expect-error test harness global

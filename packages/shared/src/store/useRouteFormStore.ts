@@ -1,4 +1,4 @@
-import type { LocationConfig } from "@/core/entities/types";
+import type { LocationConfig } from "@vlashex/core";
 import { create } from "zustand";
 
 type FormMode = "create" | "edit";
@@ -24,7 +24,7 @@ interface RouteFormUIActions {
 
 type Store = RouteFormUIState & RouteFormUIActions;
 
-export const useRouteFormStore = create<Store>()((set) => ({
+export const useRouteFormModalStore = create<Store>()((set) => ({
   modalOpen: false,
   mode: "create",
   activeTab: "basic",

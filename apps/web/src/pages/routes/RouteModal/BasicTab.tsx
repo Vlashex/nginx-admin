@@ -4,10 +4,10 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-} from "@vlashex/shared/src/ui-kit/form";
-import { Input } from "@vlashex/shared/src/ui-kit/input";
+} from "@vlashex/shared/ui-kit";
+import { Input } from "@vlashex/shared/ui-kit";
 import type { UseFormReturn } from "react-hook-form";
-import { PortSchema } from "@vlashex/core/entities/types";
+import { PortSchema } from "@vlashex/core";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Props = { form: UseFormReturn<any> };

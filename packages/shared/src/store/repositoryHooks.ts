@@ -1,6 +1,6 @@
-import { useRoutesStore } from "@/shared/store/slices/routesSlice";
-import { createRouteRepositoryAdapter } from "@/shared/store/adapters/RouteRepositoryAdapter";
-import type { RouteRepository } from "@/core/repositories/RouteRepository";
+import { useRoutesStore } from "../store/slices/routesSlice";
+import { createRouteRepositoryAdapter } from "../store/adapters/RouteRepositoryAdapter";
+import type { RouteRepository } from "@vlashex/core";
 
 export function useRoutesRepository(): RouteRepository {
   const routes = useRoutesStore((s) => s.routes); // берём данные
@@ -10,9 +10,10 @@ export function useRoutesRepository(): RouteRepository {
     () => ({ routes }),
     async (updater) => {
       const partial = updater({ routes });
+
       if (partial.routes) {
-        api.setState({ routes: partial.routes }); // ✅ работает
-        await api.getState().saveRoutes(); // ✅ вызвать экшен
+        api.setState({ routes: new Map(partial.routes) });
+        await api.getState().saveRoutes();
       }
     }
   );
