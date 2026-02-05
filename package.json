@@ -27,5 +27,9 @@
       "types": "./dist/services/IntegrationService.d.ts",
       "default": "./dist/services/IntegrationService.js"
     }
+  },
+  "scripts": {
+    "dev": "cd apps/web && pnpm dev",
+    "deploy:web": "cd apps/web && pnpm run deploy"
   }
 }
