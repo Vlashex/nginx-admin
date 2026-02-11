@@ -1,0 +1,24 @@
+{
+  "name": "@vlashex/app",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./processes/RoutesProcess": { "types": "./dist/processes/RoutesProcess.d.ts", "import": "./dist/processes/RoutesProcess.js" },
+    "./projections/RoutesProjection": { "types": "./dist/projections/RoutesProjection.d.ts", "import": "./dist/projections/RoutesProjection.js" }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "rimraf": "^6.0.1",
+    "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "@vlashex/core": "workspace:*"
+  }
+}

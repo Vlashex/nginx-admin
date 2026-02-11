@@ -4,6 +4,44 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./domain/Route": {
+      "types": "./dist/domain/Route.d.ts",
+      "default": "./dist/domain/Route.js"
+    },
+    "./ports/RouteGateway": {
+      "types": "./dist/ports/RouteGateway.d.ts",
+      "default": "./dist/ports/RouteGateway.js"
+    },
+    "./useCases/remoteRoutes": {
+      "types": "./dist/useCases/remoteRoutes.d.ts",
+      "default": "./dist/useCases/remoteRoutes.js"
+    },
+    "./entities/types": {
+      "types": "./dist/entities/types.d.ts",
+      "default": "./dist/entities/types.js"
+    },
+    "./useCases/routes": {
+      "types": "./dist/useCases/routes.d.ts",
+      "default": "./dist/useCases/routes.js"
+    },
+    "./repositories/RouteRepository": {
+      "types": "./dist/repositories/RouteRepository.d.ts",
+      "default": "./dist/repositories/RouteRepository.js"
+    },
+    "./services/ConfigGenerator": {
+      "types": "./dist/services/ConfigGenerator.d.ts",
+      "default": "./dist/services/ConfigGenerator.js"
+    },
+    "./services/IntegrationService": {
+      "types": "./dist/services/IntegrationService.d.ts",
+      "default": "./dist/services/IntegrationService.js"
+    }
+  },
   "files": [
     "dist"
   ],
