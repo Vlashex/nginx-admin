@@ -1,7 +1,7 @@
 import { RoutesProcess } from "@vlashex/app/processes/RoutesProcess";
 import { SSHRouteRepository } from "@vlashex/infra/repositories/SSHRouteRepository";
-import { ElectronExecutor } from "../adapters/ElectronExecutor";
-import { createRoutesProjectionAdapter } from "../projection/routesProjectionAdapter";
+import { ElectronExecutor } from "../adapters/ElectronExecutor.js";
+import { createRoutesProjectionAdapter } from "../projection/routesProjectionAdapter.js";
 
 export const composeRoutesProcess = (): RoutesProcess => {
   const executor = new ElectronExecutor();

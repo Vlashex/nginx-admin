@@ -2,7 +2,7 @@ import type { Client, ClientChannel, ConnectConfig } from "ssh2";
 import type { RouteCommandMap } from "@vlashex/transport/contracts/routeCommands";
 import type { RemoteExecuteOptions, RemoteExecutor } from "@vlashex/transport/RemoteExecutor";
 import { RemoteExecutionError } from "@vlashex/transport/RemoteExecutor";
-import { SSHConnectionManager, type SSHConnectionManagerOptions } from "./SSHConnectionManager";
+import { SSHConnectionManager, type SSHConnectionManagerOptions } from "./SSHConnectionManager.js";
 
 export interface SSHExecutorConfig extends ConnectConfig {
   cliPath: string;

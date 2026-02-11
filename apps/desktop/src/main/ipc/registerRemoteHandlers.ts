@@ -1,4 +1,4 @@
-import { ipcMain } from "electron";
+import { app, ipcMain } from "electron";
 import type { RouteCommandMap } from "@vlashex/transport/contracts/routeCommands";
 import {
   REMOTE_EXECUTE_CHANNEL,
@@ -6,7 +6,7 @@ import {
   type RemoteIpcResult,
 } from "@vlashex/transport/ipc";
 import { RemoteExecutionError } from "@vlashex/transport/RemoteExecutor";
-import { SSHExecutor } from "../ssh/SSHExecutor";
+import { SSHExecutor } from "../ssh/SSHExecutor.js";
 
 type RouteCommand = keyof RouteCommandMap & string;
 type RouteResponseUnion = RouteCommandMap[RouteCommand]["res"];
@@ -38,9 +38,14 @@ export const registerRemoteHandlers = (executor: SSHExecutor): void => {
   ipcMain.handle(
     REMOTE_EXECUTE_CHANNEL,
     async (
-      _event,
+      event,
       request: RemoteIpcRequest<RouteCommandMap, RouteCommand>
     ): Promise<RemoteIpcResult<RouteResponseUnion>> => {
+      const senderFrameUrl = event.senderFrame?.url ?? "";
+      if (!isTrustedSender(senderFrameUrl)) {
+        return { ok: false, error: { message: "Untrusted sender", code: "UNTRUSTED_SENDER" } };
+      }
+
       if (!ALLOWED_COMMANDS.has(request.command)) {
         return { ok: false, error: { message: "Command not allowed", code: "COMMAND_NOT_ALLOWED" } };
       }
@@ -48,4 +53,27 @@ export const registerRemoteHandlers = (executor: SSHExecutor): void => {
       return executeTyped(executor, request);
     }
   );
+};
+
+const isTrustedSender = (frameUrl: string): boolean => {
+  if (!frameUrl) {
+    return false;
+  }
+
+  if (app.isPackaged) {
+    return frameUrl.startsWith("file://");
+  }
+
+  const devUrl = process.env.ELECTRON_RENDERER_URL;
+  if (!devUrl) {
+    return frameUrl.startsWith("file://");
+  }
+
+  try {
+    const allowed = new URL(devUrl);
+    const actual = new URL(frameUrl);
+    return allowed.origin === actual.origin;
+  } catch {
+    return false;
+  }
 };

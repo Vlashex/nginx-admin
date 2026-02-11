@@ -1,16 +1,17 @@
 import type { RouteCommandMap } from "@vlashex/transport/contracts/routeCommands";
-import type { RemoteExecutor } from "@vlashex/transport/RemoteExecutor";
+import type { RemoteExecuteOptions, RemoteExecutor } from "@vlashex/transport/RemoteExecutor";
 import { RemoteExecutionError } from "@vlashex/transport/RemoteExecutor";
 
 export class ElectronExecutor implements RemoteExecutor<RouteCommandMap> {
   async execute<TKey extends keyof RouteCommandMap & string>(
     command: TKey,
-    payload: RouteCommandMap[TKey]["req"]
+    payload: RouteCommandMap[TKey]["req"],
+    options?: RemoteExecuteOptions
   ): Promise<RouteCommandMap[TKey]["res"]> {
-    const result = await window.remoteBridge.execute({ command, payload });
+    const result = await window.remoteBridge.execute(command, payload, options);
     if (!result.ok) {
-      throw new RemoteExecutionError(result.error.message, result.error.code, result.error.details);
+      throw new RemoteExecutionError(result.error.message, result.error.code);
     }
-    return result.data as RouteCommandMap[TKey]["res"];
+    return result.data;
   }
 }

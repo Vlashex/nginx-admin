@@ -6,10 +6,10 @@
   "types": "./dist/index.d.ts",
   "files": ["dist"],
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
-    "./RemoteExecutor": { "types": "./dist/RemoteExecutor.d.ts", "import": "./dist/RemoteExecutor.js" },
-    "./contracts/routeCommands": { "types": "./dist/contracts/routeCommands.d.ts", "import": "./dist/contracts/routeCommands.js" },
-    "./ipc": { "types": "./dist/ipc.d.ts", "import": "./dist/ipc.js" }
+    ".": "./dist/index.js",
+    "./RemoteExecutor": "./dist/RemoteExecutor.js",
+    "./ipc": "./dist/ipc.js",
+    "./contracts/routeCommands": "./dist/contracts/routeCommands.js"
   },
   "scripts": {
     "build": "tsc -b tsconfig.build.json",

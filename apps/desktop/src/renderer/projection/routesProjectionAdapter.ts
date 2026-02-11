@@ -1,5 +1,5 @@
 import type { RoutesProjection } from "@vlashex/app/projections/RoutesProjection";
-import { useRoutesStore } from "../store/routesStore";
+import { useRoutesStore } from "../store/routesStore.js";
 
 export const createRoutesProjectionAdapter = (): RoutesProjection => ({
   setPending: (pending) => useRoutesStore.getState().setPending(pending),
