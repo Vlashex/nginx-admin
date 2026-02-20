@@ -9,6 +9,7 @@ import {
 import type { RouteRepository } from "@vlashex/core";
 import type { Route } from "@vlashex/core";
 import { LocalStorageRouteRepository } from "@vlashex/core";
+import { RemoteBridgeRouteRepository } from "../RemoteBridgeRouteRepository";
 
 interface RoutesState {
   routes: Map<string, Route>;
@@ -109,6 +110,12 @@ export const createRoutesStore = (repository: RouteRepository) => {
 };
 
 // Создаем экземпляр по умолчанию для использования в приложении
-export const useRoutesStore = createRoutesStore(
-  new LocalStorageRouteRepository()
-);
+const createDefaultRouteRepository = (): RouteRepository => {
+  if (RemoteBridgeRouteRepository.isAvailable()) {
+    return RemoteBridgeRouteRepository.create();
+  }
+
+  return new LocalStorageRouteRepository();
+};
+
+export const useRoutesStore = createRoutesStore(createDefaultRouteRepository());
