@@ -1,0 +1,433 @@
+﻿openapi: 3.0.3
+info:
+  title: nginx-admin Control Plane API
+  version: 1.0.0
+  description: |
+    API управления декларативным состоянием NGINX и apply/rollback операциями.
+servers:
+  - url: https://nginx-admin.local
+paths:
+  /v1/state:
+    get:
+      summary: Получить текущее desired state
+      operationId: getState
+      responses:
+        "200":
+          description: Текущее состояние
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StateDocument"
+    put:
+      summary: Обновить desired state
+      operationId: putState
+      parameters:
+        - in: header
+          name: If-Match
+          required: true
+          schema:
+            type: string
+          description: Текущая revision (optimistic concurrency)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StateDocument"
+      responses:
+        "200":
+          description: State обновлён
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StateDocument"
+        "409":
+          description: Revision conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/apply:
+    post:
+      summary: Запустить apply текущего desired state
+      operationId: startApply
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                reason:
+                  type: string
+                dryRun:
+                  type: boolean
+                  default: false
+      responses:
+        "202":
+          description: Apply принят в обработку
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationAccepted"
+
+  /v1/apply/{operationId}:
+    get:
+      summary: Получить статус apply-операции
+      operationId: getApplyOperation
+      parameters:
+        - in: path
+          name: operationId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Статус apply
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplyOperation"
+        "404":
+          description: Операция не найдена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/backups:
+    get:
+      summary: Список доступных backup snapshot
+      operationId: listBackups
+      responses:
+        "200":
+          description: Список snapshot
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Backup"
+
+  /v1/backups/{backupId}/rollback:
+    post:
+      summary: Выполнить rollback к backup snapshot
+      operationId: rollbackBackup
+      parameters:
+        - in: path
+          name: backupId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                reason:
+                  type: string
+      responses:
+        "202":
+          description: Rollback принят в обработку
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationAccepted"
+
+  /v1/reconcile:
+    post:
+      summary: Запустить reconcile desired и observed runtime
+      operationId: triggerReconcile
+      responses:
+        "202":
+          description: Reconcile запущен
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationAccepted"
+
+  /v1/mode:
+    get:
+      summary: Получить текущий режим управления
+      operationId: getMode
+      responses:
+        "200":
+          description: Режим
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - mode
+                properties:
+                  mode:
+                    $ref: "#/components/schemas/OperationalMode"
+    put:
+      summary: Переключить режим управления
+      operationId: setMode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - mode
+              properties:
+                mode:
+                  $ref: "#/components/schemas/OperationalMode"
+                confirmTakeover:
+                  type: boolean
+                  description: Обязательный флаг для перехода в FULL_CONTROL
+      responses:
+        "202":
+          description: Переключение режима запущено
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationAccepted"
+
+components:
+  schemas:
+    OperationalMode:
+      type: string
+      enum: [OVERLAY, FULL_CONTROL]
+
+    StateDocument:
+      type: object
+      additionalProperties: false
+      required:
+        - schemaVersion
+        - revision
+        - updatedAt
+        - updatedBy
+        - servers
+      properties:
+        schemaVersion:
+          type: string
+          example: "1.0.0"
+        revision:
+          type: integer
+          minimum: 0
+          example: 42
+        updatedAt:
+          type: string
+          format: date-time
+        updatedBy:
+          type: string
+        servers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Server"
+
+    Server:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - serverName
+        - listen
+        - routes
+        - enabled
+      properties:
+        id:
+          type: string
+        serverName:
+          type: string
+        listen:
+          type: array
+          items:
+            $ref: "#/components/schemas/Listen"
+        routes:
+          type: array
+          items:
+            $ref: "#/components/schemas/Route"
+        enabled:
+          type: boolean
+
+    Listen:
+      type: object
+      additionalProperties: false
+      required:
+        - port
+        - ssl
+      properties:
+        port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+        ssl:
+          type: boolean
+
+    Route:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - path
+        - action
+        - enabled
+      properties:
+        id:
+          type: string
+        path:
+          type: string
+        matchType:
+          type: string
+          enum: [prefix, exact, regex]
+        action:
+          $ref: "#/components/schemas/RouteAction"
+        enabled:
+          type: boolean
+
+    RouteAction:
+      oneOf:
+        - $ref: "#/components/schemas/ProxyPassAction"
+        - $ref: "#/components/schemas/StaticAction"
+        - $ref: "#/components/schemas/RedirectAction"
+
+    ProxyPassAction:
+      type: object
+      additionalProperties: false
+      required: [type, target]
+      properties:
+        type:
+          type: string
+          enum: [proxy_pass]
+        target:
+          type: string
+
+    StaticAction:
+      type: object
+      additionalProperties: false
+      required: [type, root]
+      properties:
+        type:
+          type: string
+          enum: [static]
+        root:
+          type: string
+        index:
+          type: string
+
+    RedirectAction:
+      type: object
+      additionalProperties: false
+      required: [type, url, code]
+      properties:
+        type:
+          type: string
+          enum: [redirect]
+        url:
+          type: string
+        code:
+          type: integer
+          enum: [301, 302, 307, 308]
+
+    ApplyOperation:
+      type: object
+      additionalProperties: false
+      required:
+        - operationId
+        - kind
+        - status
+        - startedAt
+      properties:
+        operationId:
+          type: string
+        kind:
+          type: string
+          enum: [APPLY, ROLLBACK, RECONCILE, MODE_SWITCH]
+        status:
+          type: string
+          enum:
+            - ACCEPTED
+            - STAGING
+            - VALIDATED
+            - BACKED_UP
+            - COMMITTED
+            - RELOADED
+            - SUCCEEDED
+            - FAILED_PRE_COMMIT
+            - FAILED_COMMIT
+            - FAILED_POST_COMMIT
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+        stateRevision:
+          type: integer
+        backupId:
+          type: string
+        message:
+          type: string
+        errorCode:
+          type: string
+
+    Backup:
+      type: object
+      additionalProperties: false
+      required:
+        - backupId
+        - createdAt
+        - path
+        - stateRevision
+      properties:
+        backupId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        path:
+          type: string
+        stateRevision:
+          type: integer
+        checksumSha256:
+          type: string
+
+    OperationAccepted:
+      type: object
+      required:
+        - operationId
+        - status
+      properties:
+        operationId:
+          type: string
+        status:
+          type: string
+          enum: [ACCEPTED]
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true

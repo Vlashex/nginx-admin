@@ -1,0 +1,21 @@
+﻿@startuml
+skinparam monochrome true
+skinparam shadowing false
+
+title State and Runtime Convergence Flow
+
+[*] --> IN_SYNC
+
+IN_SYNC --> PENDING_APPLY : state revision incremented
+PENDING_APPLY --> APPLYING : apply started
+APPLYING --> IN_SYNC : apply succeeded
+APPLYING --> DEGRADED : apply failed
+
+IN_SYNC --> OUT_OF_SYNC : drift detected
+OUT_OF_SYNC --> APPLYING : reconcile triggered
+OUT_OF_SYNC --> DEGRADED : repeated reconcile failure
+
+DEGRADED --> APPLYING : manual retry
+DEGRADED --> IN_SYNC : rollback + successful apply
+
+@enduml
