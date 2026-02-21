@@ -37,7 +37,8 @@
 - **Route**: правило сопоставления path -> upstream/static behavior.
 - **UpstreamRef**: целевой backend (URL/unix socket/static root).
 - **StateMetadata**: ревизия, автор, timestamp.
-- **ApplyOperation**: транзакция применения (status, timestamps, diagnostics).
+- **RuntimeStatus**: состояние сходимости (`IN_SYNC`, `PENDING_APPLY`, `APPLYING`, `OUT_OF_SYNC`, `DEGRADED`).
+- **RevisionCursor**: пара `desiredRevision / observedRevision`.
 - **BackupSnapshot**: архив и метаданные отката.
 
 ## 3. Инварианты
@@ -49,11 +50,12 @@
 - **INV-5**: generated каталог всегда полностью реконструируем из state.
 - **INV-6**: runtime commit разрешён только после успешного `nginx -t` на staging-конфиге.
 - **INV-7**: каждое успешное применение имеет backup snapshot.
-- **INV-8**: rollback не изменяет исторические snapshot; создаёт новую операцию с новым revision.
+- **INV-8**: rollback не изменяет исторические snapshot; формирует новый факт в журнале.
+- **INV-9**: при успешном apply daemon устанавливает `observedRevision = desiredRevision`.
 
 ## 4. Explicit idempotency definition
 
-Операция `Apply(state_revision = R)` считается идемпотентной, если повторный вызов при неизменном `state.json` и том же `R`:
+Daemon apply для `state_revision = R` считается идемпотентным, если повторный проход при неизменном `state.json` и том же `R`:
 
 - не меняет effective runtime bytes;
 - не создаёт дополнительных side-effects, кроме audit/log записи;

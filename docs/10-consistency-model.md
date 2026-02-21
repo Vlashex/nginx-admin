@@ -16,22 +16,23 @@
 ## 3. Read semantics
 
 - `GET /state` возвращает текущий committed state и revision.
-- `GET /operations/{id}` возвращает статус apply для трассировки асинхронного convergence.
+- `GET /runtime/status` возвращает `desiredRevision`, `observedRevision`, `syncState`.
 
 ## 4. Runtime consistency states
 
 - `IN_SYNC`: active runtime hash == `Render(state@revision)` hash.
-- `PENDING_APPLY`: state обновлён, runtime ещё не переключён.
+- `PENDING_APPLY`: state обновлён, daemon ещё не начал apply.
+- `APPLYING`: daemon выполняет pipeline `render -> test -> backup -> switch -> reload`.
 - `OUT_OF_SYNC`: обнаружен drift или незавершённый convergence.
 - `DEGRADED`: apply/reload failed, требуется operator action.
 
 ## 5. State reconciliation strategy
 
-1. Периодический reconcile-loop читает current state/revision.
-2. Строит expected runtime hash через детерминированный render.
-3. Считывает observed active runtime hash.
-4. Если hash различается, фиксирует drift и инициирует controlled re-apply.
-5. При повторном fail переводит систему в `DEGRADED` и блокирует авто-commit.
+1. Daemon polling-loop сравнивает `desiredRevision` и `observedRevision`.
+2. Если revision расходятся, daemon запускает apply pipeline.
+3. Reconcile-loop дополнительно сверяет `Hash(Render(state))` и hash active runtime.
+4. Если hash различается, фиксируется `OUT_OF_SYNC` и запускается re-apply.
+5. При повторном fail система переводится в `DEGRADED`.
 
 ## 6. Explicit reconciliation guarantees
 

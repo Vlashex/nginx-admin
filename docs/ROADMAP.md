@@ -1,11 +1,6 @@
-# Nginx Admin — Roadmap
+# Nginx Admin — Unified Product ROADMAP
 
-**Nginx Admin** — это SPA-панель управления конфигурацией Nginx.
-Проект ориентирован на разработчиков и администраторов, которым требуется безопасный и наглядный способ создавать, редактировать и анализировать виртуальные хосты без прямого редактирования файлов на сервере.
-
----
-
-## 0.x — Архитектурная подготовка
+## 0.x — Архитектурная подготовка (реализовано)
 
 ### 0.1.0 — Proof of Concept
 
@@ -60,122 +55,219 @@
 
 ---
 
-## 1.x — Переход от SPA к Electron и SSH-интеграции
+## 1.x — Electron + transport preparation (не финальный продукт)
 
-### **1.0.5 — Завершение SPA**
+### 1.1.0 — Electron Shell Baseline
 
-**Цель:** стабилизировать интерфейс и UX перед сменой окружения.
+**Web**
+- Стабилизация SPA как renderer-слоя без прямого доступа к системным операциям.
+- Сохранение DDD/use-case/repository границ.
 
-- Завершены UX-доработки (анимации, spacing, контраст, уведомления)
-- Полный CRUD и предпросмотр маршрутов
-- Автосохранение и toast-сообщения
-- Используется `LocalStorageRouteRepository`
-- Готовая DDD-архитектура (`useCases`, `repositories`, `store`)
+**Electron**
+- Базовый `main/preload/renderer` контур.
+- Безопасный IPC-канал для типизированных команд.
 
-> ✅ Завершённый SPA-базис, готовый к интеграции Electron.
+**Daemon**
+- Не реализуется.
+- Формируется целевой контракт взаимодействия для будущего daemon API.
 
----
+### 1.2.0 — Transport Contract Hardening
 
-### **1.1.0 — Electron Shell Integration**
+**Web**
+- Введение transport-адаптеров (mock/http/electron) без нарушения repository abstraction.
+- Подготовка UI к асинхронной модели `desired state -> observed runtime`.
 
-**Цель:** обернуть существующий UI в Electron и создать инфраструктуру обмена данными.
+**Electron**
+- Типизированные command contracts.
+- Обработка timeout/retry/cancel/error mapping.
 
-- Интеграция Electron + Vite (`vite-plugin-electron`)
-- Настроены `main`, `preload` и `renderer`
-- Безопасный IPC (context isolation, ограниченный Node API)
-- Настроены окружения dev/prod
-- Поддержка сборок под Win/Linux/macOS
-- Подготовка интерфейсов адаптеров для хранилища (`SSHRouteRepository`)
+**Daemon**
+- Не реализуется.
+- Уточнение внешнего API-контракта (`state`, `runtime status`, `reconcile`, `rollback`).
 
----
+### 1.3.0 — SSH Transitional Layer
 
-### **1.2.0 — SSHRouteRepository**
+**Web**
+- Отсутствие прямой SSH-зависимости.
+- Работа только через application/process abstraction.
 
-**Цель:** реализовать взаимодействие с реальным сервером через SSH.
+**Electron**
+- SSH используется как переходный transport.
+- Область SSH ограничивается bootstrap-операциями и проверкой доступности хоста.
 
-- Реализация `SSHRouteRepository` на основе `ssh2`
-- Поддержка whitelisted-команд (`nginx -t`, `reload`, `apply`)
-- Передача конфигов во временный каталог `/tmp/nginx-admin`
-- Проверка синтаксиса перед применением и diff-просмотр
-- Обработка ошибок и таймаутов
-- Добавлен раздел "Подключения" для тестирования и управления
+**Daemon**
+- Не реализуется.
+- Определяется целевой bootstrap-протокол установки daemon.
 
----
+### 1.4.0 — Bootstrap UX for Daemon Install
 
-### **1.3.0 — Тестирование и Hardening**
+**Web**
+- Подготовка экранов/форм подключения и инициализации инстанса.
 
-**Цель:** покрыть desktop-логику тестами и усилить безопасность.
+**Electron**
+- Оркестрация `install.sh`/package install через SSH.
+- Проверка systemd-юнита и первичного health-check daemon.
 
-- Unit и integration тесты (`Vitest`, `React Testing Library`)
-- E2E сценарии (`Playwright`)
-- Проверка фильтрации SSH-команд
-- Sandbox-режим Electron (`contextIsolation`, `preload`)
-- Crash recovery и dev mode
-- Поддержка автообновлений
-
----
-
-## 2.x — Управление конфигурацией
-
-### 2.0.0 — Редактор Nginx-конфигураций
-
-**Цель:** предоставить интерфейс для глобального редактирования `nginx.conf`.
-
-- Вкладка `/config` с редактором кода (Monaco / CodeMirror)
-- Подсветка синтаксиса Nginx
-- Проверка конфигурации перед применением
-- Версионирование изменений
+**Daemon**
+- Появляется как внешняя исполняемая сущность на хосте.
+- После установки должен быть автономным от Electron.
 
 ---
 
-## 3.x — Диагностика и мониторинг
+## 2.x — Daemon implementation (core control plane)
 
-### 3.0.0 — Просмотр логов
+### 2.0.0 — Daemon MVP (Single Host)
 
-**Цель:** обеспечить базовую диагностику работы Nginx.
+**Web**
+- Управление декларативным `state` через API.
+- Отображение `desiredRevision/observedRevision/syncState`.
 
-- Просмотр access и error логов
-- Фильтрация по домену, IP и коду ответа
-- Автоматическое обновление (live tail)
-- Очистка логов и экспорт
+**Electron**
+- Используется для bootstrap и диагностики инстанса.
+- Не участвует в основном apply lifecycle.
+
+**Daemon**
+- Реализация `state store` (`state.json`) и revision protocol.
+- Render + validate (`nginx -t`) + backup + atomic switch + reload.
+- Переходы `IN_SYNC/PENDING_APPLY/APPLYING/DEGRADED`.
+
+### 2.1.0 — Reconcile and Drift Control
+
+**Web**
+- Видимость drift-состояния и ручной запуск reconcile/rollback.
+
+**Electron**
+- Инструменты оператора для bootstrap/repair, без runtime-управления конфигом.
+
+**Daemon**
+- Periodic reconcile loop.
+- Drift detection (`Render(state)` vs active runtime hash).
+- Controlled re-apply, обновление `observedRevision`.
+
+### 2.2.0 — Rollback and Failure Semantics
+
+**Web**
+- Просмотр backup snapshots и запуск rollback по snapshot id.
+
+**Electron**
+- Диагностика проблем bootstrap/system-level.
+
+**Daemon**
+- Гарантированный rollback pipeline.
+- Failure handling с переводом в `DEGRADED`.
+- Атомарность commit/restore на файловом уровне.
+
+### 2.3.0 — Full Control Takeover
+
+**Web**
+- Операции переключения режимов `OVERLAY`/`FULL_CONTROL`.
+- Явный контроль takeover-подтверждений.
+
+**Electron**
+- Поддержка миграционных сценариев и удалённой инсталляции обновлений daemon.
+
+**Daemon**
+- Legacy migration workflow.
+- Управление `legacy` и `generated` зонами.
+- Enforcement: `/etc/nginx` как runtime output, `state.json` как source of truth.
 
 ---
 
-## 4.x — Аналитика и интеграции
+## 3.x — Production maturity
 
-### 4.0.0 — Статистика
+### 3.0.0 — Observability and Operations
 
-**Цель:** визуализировать нагрузку и производительность.
+**Web**
+- Операционные статусы, журналы операций, диагностика состояний sync.
 
-- Графики по доменам и запросам
-- Метрики времени отклика, ошибок, трафика
-- Интеграция с Prometheus / Netdata API
+**Electron**
+- Локальные инструменты обслуживания инстанса и recovery-runbooks.
 
-### 4.1.0 — Авторизация и мультисерверность
+**Daemon**
+- Метрики, structured logs, health/readiness endpoints.
+- SLO-ориентированная телеметрия apply/reconcile/rollback.
 
-**Цель:** подготовить продукт к промышленному использованию.
+### 3.1.0 — Security and Access Control
 
-- Аутентификация пользователей (JWT / Basic Auth)
-- Поддержка нескольких серверов
-- Сводная панель состояния по всем инстансам
+**Web**
+- RBAC-aware UI (viewer/operator/admin).
+
+**Electron**
+- Защищённое хранение credential-профилей подключения для bootstrap.
+
+**Daemon**
+- AuthN/AuthZ для API.
+- Audit trail для state changes и privileged operations.
+- Жёсткие security boundaries для runtime paths.
+
+### 3.2.0 — Reliability Hardening
+
+**Web**
+- Явное отображение деградаций и безопасных операционных действий.
+
+**Electron**
+- Утилиты для восстановлений и проверки целостности инстанса.
+
+**Daemon**
+- Crash recovery.
+- Backup retention/verification.
+- Idempotent command processing и защита от конкурентных apply.
 
 ---
 
-## 5.x — Расширенные возможности и автоматизация
+## 4.x — Multi-host / enterprise scale
 
-### 5.0.0 — Enterprise-уровень
+### 4.0.0 — Multi-Host Fleet Management
 
-**Цель:** превратить Nginx Admin в комплексную DevOps-панель.
+**Web**
+- Единая панель управления множеством daemon-инстансов.
+- Хостовые статусы, групповые операции.
 
-- Сценарии деплоя и отката конфигураций
-- Резервное копирование и восстановление
-- REST / WebSocket API для интеграции с CI/CD
-- Поддержка плагинов и пользовательских тем
-- Интерактивное тестирование маршрутов
+**Electron**
+- Массовый bootstrap новых хостов (опционально).
+- Инструменты начальной регистрации инстансов.
+
+**Daemon**
+- Стандартизированный host API.
+- Поддержка coordinated rollout на уровне fleet orchestration.
+
+### 4.1.0 — Policy, Governance, Compliance
+
+**Web**
+- Политики изменений, approval workflows, compliance views.
+
+**Electron**
+- Поддержка управляемой инициализации в регламентированных средах.
+
+**Daemon**
+- Policy enforcement на apply.
+- Расширенный audit/compliance export.
+- Контролируемые окна изменений.
+
+### 4.2.0 — Enterprise Integrations
+
+**Web**
+- Интеграционные панели для CI/CD и внешних систем.
+
+**Electron**
+- Операционные bridge-инструменты для закрытых сред.
+
+**Daemon**
+- API-интеграции (SIEM, ITSM, secret managers, CMDB).
+- Стандартизированные контракты событий и webhook/queue доставок.
 
 ---
 
-## Стратегическая цель
+## 5.x — Advanced platform capabilities
 
-Создать независимую, лёгкую и модульную панель для управления Nginx,
-способную заменить ручное редактирование конфигураций в 80% сценариев системных администраторов и DevOps-инженеров.
+### 5.0.0 — Federated Control Plane
+
+**Web**
+- Управление доменами/регионами/тенантами в единой модели.
+
+**Electron**
+- Минимальная роль: bootstrap/maintenance в edge-средах.
+
+**Daemon**
+- Федерация инстансов, межрегиональная согласованность политик.
+- Расширенные стратегии rollout/rollback на уровне платформы.

@@ -13,6 +13,7 @@
 ## 2. Базовые определения
 
 - **Control Plane**: логика управления состоянием, валидации, генерации и применения конфигурации.
+- **Daemon Orchestrator**: фоновый процесс, который обнаруживает новую revision и применяет её в runtime.
 - **Data Plane**: исполняемый NGINX-процесс, который обслуживает трафик.
 - **Source of Truth**: `/etc/nginx-admin/state.json`.
 - **Runtime Output**: сгенерированные конфиги в `/etc/nginx-admin/generated/` и/или активной runtime-зоне NGINX.
@@ -50,4 +51,4 @@
 - транспортный контракт удалённого исполнения (`RemoteExecutor`);
 - SSH execution и IPC-границы Electron.
 
-Целевая документация расширяет это до полного state-driven lifecycle: persisted state, render graph, apply transaction, backups, drift prevention.
+Целевая документация расширяет это до полного state-driven lifecycle: persisted state, daemon-driven apply, backups, drift prevention.

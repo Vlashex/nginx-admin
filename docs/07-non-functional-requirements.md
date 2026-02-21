@@ -18,7 +18,7 @@
 
 ## 4. Наблюдаемость
 
-- **NFR-8**: каждая операция mutation/apply/rollback имеет operationId и structured logs.
+- **NFR-8**: каждая стадия daemon lifecycle (`PENDING_APPLY`, `APPLYING`, `IN_SYNC`, `DEGRADED`) логируется структурированно.
 - **NFR-9**: метрики `apply_success_total`, `apply_failure_total`, `drift_detected_total` обязательны.
 
 ## 5. Безопасность

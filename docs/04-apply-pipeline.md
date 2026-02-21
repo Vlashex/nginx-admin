@@ -2,14 +2,14 @@
 
 ## 1. Pipeline phases
 
-1. **Accept State**: принять новый state (через API/UI/CLI), валидация схемы и бизнес-инвариантов.
-2. **Persist Desired State**: записать `state.json` с новым `revision`.
-3. **Render to Staging**: сгенерировать `nginx.conf` и `servers/*.conf` во временную директорию.
-4. **Validate**: выполнить `nginx -t` против staging root.
-5. **Backup**: создать snapshot (`/etc/nginx` + `state.json`).
-6. **Atomic Commit**: атомарно переключить runtime на generated output.
-7. **Reload**: выполнить `nginx reload`.
-8. **Verify/Post-Check**: убедиться, что reload успешен и PID/health не деградировали.
+1. **Write Desired State**: клиент выполняет `PUT /v1/state` с `If-Match: revision`.
+2. **Persist Revision**: state store валидирует и сохраняет новую revision.
+3. **Detect Change**: daemon polling обнаруживает, что `desiredRevision > observedRevision`.
+4. **Render to Staging**: daemon генерирует staging runtime output.
+5. **Validate**: daemon выполняет `nginx -t`.
+6. **Backup**: daemon создаёт snapshot (`/etc/nginx` + `state.json`).
+7. **Atomic Commit + Reload**: daemon выполняет switch и `nginx reload`.
+8. **Mark Observed Revision**: daemon фиксирует `observedRevision = desiredRevision`.
 
 ## 2. Модель атомарности
 
@@ -22,21 +22,25 @@
 
 ### 2.2 Failure semantics
 
-- Ошибка в фазах 1-4: runtime не меняется.
-- Ошибка в фазе backup: commit не начинается.
-- Ошибка после commit, но до успешного reload: выполняется rollback к snapshot.
+- Ошибка в фазах 1-6: runtime не меняется.
+- Ошибка после commit/reload переводит систему в `DEGRADED`.
+- Выход из `DEGRADED`: `reconcile` retry или rollback к валидному snapshot.
 
 ## 3. Псевдоалгоритм
 
 ```text
-apply(stateDraft):
+PUT /v1/state (If-Match=R):
   validate(stateDraft)
-  staged = render(stateDraft)
-  nginx_test(staged)
-  backup_id = create_backup(/etc/nginx, /etc/nginx-admin/state.json)
-  atomic_switch(staged -> runtime)
-  reload_nginx()
-  mark_success(backup_id)
+  persist(stateDraft, revision=R+1)
+
+daemon_loop:
+  if desiredRevision > observedRevision:
+    staged = render(state@desiredRevision)
+    nginx_test(staged)
+    backup_id = create_backup(/etc/nginx, /etc/nginx-admin/state.json)
+    atomic_switch(staged -> runtime)
+    reload_nginx()
+    mark_observed_revision(desiredRevision)
 ```
 
 ## 4. Гарантии rollback
@@ -44,16 +48,16 @@ apply(stateDraft):
 - rollback-операция выбирает snapshot N;
 - восстанавливает `/etc/nginx` и `state.json` из snapshot;
 - выполняет `nginx -t` перед reload;
-- при успешном rollback фиксируется новая операция в журнале.
+- при успешном rollback система возвращается в `IN_SYNC`.
 
 ## 5. Drift prevention
 
 - runtime read-only для операторов (policy + ACL);
 - периодический reconcile job сравнивает `Render(state)` hash с active hash;
-- при drift выставляется статус `OUT_OF_SYNC` и инициируется controlled re-apply.
+- при drift выставляется статус `OUT_OF_SYNC` и reconcile loop инициирует re-apply.
 
 ## 6. Concurrency control
 
 - только один apply одновременно (mutex/lease);
 - state mutation использует optimistic lock (`If-Match: revision`);
-- конкурентные обновления возвращают `409 Conflict`.
+- конкурентные обновления state возвращают `409 Conflict`.

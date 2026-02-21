@@ -3,7 +3,8 @@ info:
   title: nginx-admin Control Plane API
   version: 1.0.0
   description: |
-    API управления декларативным состоянием NGINX и apply/rollback операциями.
+    API управления декларативным состоянием NGINX в daemon-driven модели.
+    Клиент записывает desired state, а daemon асинхронно приводит runtime к новой revision.
 servers:
   - url: https://nginx-admin.local
 paths:
@@ -56,54 +57,17 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /v1/apply:
-    post:
-      summary: Запустить apply текущего desired state
-      operationId: startApply
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: false
-              properties:
-                reason:
-                  type: string
-                dryRun:
-                  type: boolean
-                  default: false
-      responses:
-        "202":
-          description: Apply принят в обработку
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/OperationAccepted"
-
-  /v1/apply/{operationId}:
+  /v1/runtime/status:
     get:
-      summary: Получить статус apply-операции
-      operationId: getApplyOperation
-      parameters:
-        - in: path
-          name: operationId
-          required: true
-          schema:
-            type: string
+      summary: Получить статус сходимости desired и runtime
+      operationId: getRuntimeStatus
       responses:
         "200":
-          description: Статус apply
+          description: Текущий статус daemon convergence
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApplyOperation"
-        "404":
-          description: Операция не найдена
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/RuntimeStatus"
 
   /v1/backups:
     get:
@@ -146,23 +110,23 @@ paths:
                   type: string
       responses:
         "202":
-          description: Rollback принят в обработку
+          description: Rollback принят в обработку daemon
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OperationAccepted"
+                $ref: "#/components/schemas/CommandAccepted"
 
   /v1/reconcile:
     post:
-      summary: Запустить reconcile desired и observed runtime
+      summary: Принудительно запустить reconcile
       operationId: triggerReconcile
       responses:
         "202":
-          description: Reconcile запущен
+          description: Reconcile поставлен в очередь daemon
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OperationAccepted"
+                $ref: "#/components/schemas/CommandAccepted"
 
   /v1/mode:
     get:
@@ -200,17 +164,43 @@ paths:
                   description: Обязательный флаг для перехода в FULL_CONTROL
       responses:
         "202":
-          description: Переключение режима запущено
+          description: Переключение режима принято daemon
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OperationAccepted"
+                $ref: "#/components/schemas/CommandAccepted"
 
 components:
   schemas:
     OperationalMode:
       type: string
       enum: [OVERLAY, FULL_CONTROL]
+
+    RuntimeSyncState:
+      type: string
+      enum: [IN_SYNC, PENDING_APPLY, APPLYING, OUT_OF_SYNC, DEGRADED]
+
+    RuntimeStatus:
+      type: object
+      additionalProperties: false
+      required:
+        - desiredRevision
+        - observedRevision
+        - syncState
+      properties:
+        desiredRevision:
+          type: integer
+          minimum: 0
+        observedRevision:
+          type: integer
+          minimum: 0
+        syncState:
+          $ref: "#/components/schemas/RuntimeSyncState"
+        lastError:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
 
     StateDocument:
       type: object
@@ -343,48 +333,6 @@ components:
           type: integer
           enum: [301, 302, 307, 308]
 
-    ApplyOperation:
-      type: object
-      additionalProperties: false
-      required:
-        - operationId
-        - kind
-        - status
-        - startedAt
-      properties:
-        operationId:
-          type: string
-        kind:
-          type: string
-          enum: [APPLY, ROLLBACK, RECONCILE, MODE_SWITCH]
-        status:
-          type: string
-          enum:
-            - ACCEPTED
-            - STAGING
-            - VALIDATED
-            - BACKED_UP
-            - COMMITTED
-            - RELOADED
-            - SUCCEEDED
-            - FAILED_PRE_COMMIT
-            - FAILED_COMMIT
-            - FAILED_POST_COMMIT
-        startedAt:
-          type: string
-          format: date-time
-        finishedAt:
-          type: string
-          format: date-time
-        stateRevision:
-          type: integer
-        backupId:
-          type: string
-        message:
-          type: string
-        errorCode:
-          type: string
-
     Backup:
       type: object
       additionalProperties: false
@@ -406,13 +354,13 @@ components:
         checksumSha256:
           type: string
 
-    OperationAccepted:
+    CommandAccepted:
       type: object
       required:
-        - operationId
+        - commandId
         - status
       properties:
-        operationId:
+        commandId:
           type: string
         status:
           type: string

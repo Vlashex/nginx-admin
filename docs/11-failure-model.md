@@ -12,22 +12,23 @@
 
 ## 2. Обязательное поведение по отказам
 
-- Для F-1..F-4: runtime остаётся неизменным, операция помечается `FAILED_PRE_COMMIT`.
-- Для F-5: выполнить восстановление pre-commit snapshot, статус `FAILED_COMMIT`.
-- Для F-6: выполнить rollback последнего успешного snapshot, статус `FAILED_POST_COMMIT`.
-- Для F-7: блокировать auto-apply и требовать ручной интервенции.
+- Для F-1..F-4: runtime остаётся неизменным, `syncState -> DEGRADED`.
+- Для F-5: выполнить восстановление pre-commit snapshot, `syncState -> DEGRADED`.
+- Для F-6: выполнить rollback последнего успешного snapshot, `syncState -> DEGRADED`.
+- Для F-7: блокировать auto-reconcile и требовать ручной интервенции.
 
-## 3. Отказоустойчивость операций
+## 3. Отказоустойчивость состояния
 
-- apply-operation имеет конечный автомат статусов: `ACCEPTED -> STAGING -> VALIDATED -> BACKED_UP -> COMMITTED -> RELOADED -> SUCCEEDED`.
-- Любое исключение переводит операцию в terminal fail status с кодом причины.
+- Состояние convergence подчиняется автомату: `IN_SYNC -> PENDING_APPLY -> APPLYING -> IN_SYNC`.
+- При сбоях автомат уходит в `DEGRADED`.
+- При drift автомат уходит в `OUT_OF_SYNC`, затем в `APPLYING` (успех) или `DEGRADED` (повторный fail).
 
 ## 4. Rollback guarantees
 
 - rollback использует immutable snapshot;
 - rollback проходит тот же `nginx -t` gate;
 - rollback атомарен относительно runtime switch;
-- rollback-аудит содержит source backup id и восстановленный revision.
+- успешный rollback возвращает систему в `IN_SYNC`.
 
 ## 5. Takeover-specific failure scenarios
 
