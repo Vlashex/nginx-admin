@@ -4,37 +4,32 @@
 sequenceDiagram
   actor Operator
   participant API
-  participant SS as State Service
+  participant SS as State Store
+  participant D as Daemon
   participant R as Renderer
-  participant V as Validator (nginx -t)
-  participant B as Backup Manager
-  participant C as Commit Manager
+  participant V as Validator
+  participant B as Backup
+  participant C as Commit
   participant N as NGINX
 
   Operator->>API: PUT /v1/state (If-Match: revision)
   API->>SS: validate + persist state
   SS-->>API: state@revision+1
+  API-->>Operator: 200 OK (ETag: newRevision)
 
-  Operator->>API: POST /v1/apply
-  API->>R: render(state@revision)
-  R-->>API: staged config path
-  API->>V: nginx -t (staging)
-  V-->>API: OK
-  API->>B: create snapshot(/etc/nginx, state.json)
-  B-->>API: backupId
-  API->>C: atomic switch staged -> runtime
-  C-->>API: committed
-  API->>N: reload
-  N-->>API: reloaded
-  API-->>Operator: SUCCEEDED(operationId, backupId)
+  D->>SS: poll revision
+  D->>D: detect new revision
 
-  alt validation/reload fails
-    V-->>API: FAIL
-    API-->>Operator: FAILED_PRE_COMMIT
-  else reload fails after commit
-    N-->>API: FAIL
-    API->>C: rollback(backupId)
-    C-->>API: rolled back
-    API-->>Operator: FAILED_POST_COMMIT_ROLLED_BACK
-  end
+  D->>R: render(state)
+  R-->>D: staged config
+  D->>V: nginx -t
+  V-->>D: OK
+  D->>B: create snapshot
+  B-->>D: backupId
+  D->>C: atomic switch
+  C-->>D: committed
+  D->>N: reload
+  N-->>D: reloaded
+
+  D->>SS: mark observedRevision = revision
 ```
