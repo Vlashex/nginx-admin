@@ -1,6 +1,7 @@
 ﻿#!/bin/sh
 set -e
 
+
 if ! id -u nginx-admin >/dev/null 2>&1; then
   useradd --system --home /nonexistent --shell /usr/sbin/nologin nginx-admin || true
 fi
