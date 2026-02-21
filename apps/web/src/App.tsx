@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import {
   BrowserRouter,
   HashRouter,
@@ -7,6 +7,7 @@ import {
   Link,
 } from "react-router-dom";
 import RoutesPage from "./pages/routes/RoutesPage";
+import BootstrapPage from "./pages/bootstrap/BootstrapPage";
 import { Toaster } from "sonner";
 
 const isProd = import.meta.env.MODE === "production";
@@ -24,19 +25,22 @@ function Sidebar({ isOpen }: { isOpen: boolean }) {
       </div>
       <nav className="flex flex-col space-y-2">
         <Link to="/" className="px-4 py-2 rounded hover:bg-gray-700">
-          Обзор
+          Overview
         </Link>
         <Link to="/routes" className="px-4 py-2 rounded hover:bg-gray-700">
-          Маршруты
+          Routes
         </Link>
         <Link to="/config" className="px-4 py-2 rounded hover:bg-gray-700">
-          Конфигурация
+          Config
         </Link>
         <Link to="/logs" className="px-4 py-2 rounded hover:bg-gray-700">
-          Логи
+          Logs
         </Link>
         <Link to="/statistics" className="px-4 py-2 rounded hover:bg-gray-700">
-          Статистика
+          Statistics
+        </Link>
+        <Link to="/bootstrap" className="px-4 py-2 rounded hover:bg-gray-700">
+          Bootstrap
         </Link>
       </nav>
     </div>
@@ -44,19 +48,19 @@ function Sidebar({ isOpen }: { isOpen: boolean }) {
 }
 
 function Overview() {
-  return <div className="text-gray-200">Добро пожаловать в панель Nginx</div>;
+  return <div className="text-gray-200">Welcome to Nginx Admin dashboard</div>;
 }
 
 function ConfigPage() {
-  return <div className="text-gray-200">Редактор конфигурации</div>;
+  return <div className="text-gray-200">Configuration editor</div>;
 }
 
 function LogsPage() {
-  return <div className="text-gray-200">Просмотр логов</div>;
+  return <div className="text-gray-200">Logs view</div>;
 }
 
 function StatisticsPage() {
-  return <div className="text-gray-200">Статистика</div>;
+  return <div className="text-gray-200">Statistics</div>;
 }
 
 export default function App() {
@@ -74,6 +78,7 @@ export default function App() {
             <Route path="/config" element={<ConfigPage />} />
             <Route path="/logs" element={<LogsPage />} />
             <Route path="/statistics" element={<StatisticsPage />} />
+            <Route path="/bootstrap" element={<BootstrapPage />} />
           </Routes>
         </div>
       </div>

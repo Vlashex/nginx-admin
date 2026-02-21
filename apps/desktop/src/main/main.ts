@@ -112,7 +112,12 @@ const resolvePrivateKeyConfig = (): { privateKey: string | Buffer | undefined; s
   return { privateKey: legacyValue, source: "inline" };
 };
 
-const createSshExecutor = (): SSHExecutor => {
+interface SshRuntime {
+  executor: SSHExecutor;
+  hasAuth: boolean;
+}
+
+const createSshRuntime = (): SshRuntime => {
   const host = process.env.SSH_HOST ?? "127.0.0.1";
   const username = process.env.SSH_USERNAME ?? process.env.USER ?? process.env.USERNAME ?? "";
   if (!username) {
@@ -137,23 +142,26 @@ const createSshExecutor = (): SSHExecutor => {
     console.warn(`${SSH_LOG_PREFIX} Neither SSH password nor private key is configured.`);
   }
 
-  return new SSHExecutor(
-    {
-      host,
-      username,
-      port,
-      password: process.env.SSH_PASSWORD,
-      privateKey,
-      passphrase: process.env.SSH_PASSPHRASE,
-      cliPath: process.env.NGINX_ADMIN_CLI_PATH ?? "/usr/local/bin/nginx-admin-cli",
-    },
-    {
-      keepaliveInterval: 15_000,
-      keepaliveCountMax: 3,
-      maxRetries: 1,
-      retryBaseDelayMs: 250,
-    }
-  );
+  return {
+    executor: new SSHExecutor(
+      {
+        host,
+        username,
+        port,
+        password: process.env.SSH_PASSWORD,
+        privateKey,
+        passphrase: process.env.SSH_PASSPHRASE,
+        cliPath: process.env.NGINX_ADMIN_CLI_PATH ?? "/usr/local/bin/nginx-admin-cli",
+      },
+      {
+        keepaliveInterval: 15_000,
+        keepaliveCountMax: 3,
+        maxRetries: 1,
+        retryBaseDelayMs: 250,
+      }
+    ),
+    hasAuth: usesPassword || usesPrivateKey,
+  };
 };
 
 const createWindow = async (): Promise<BrowserWindow> => {
@@ -198,12 +206,18 @@ const createWindow = async (): Promise<BrowserWindow> => {
 
 let mainWindow: BrowserWindow | null = null;
 loadDesktopEnv();
-const sshExecutor = createSshExecutor();
+const sshRuntime = createSshRuntime();
+const sshExecutor = sshRuntime.executor;
 
 app.whenReady().then(async () => {
   registerBootstrapHandlers(sshExecutor);
   mainWindow = await createWindow();
   mainWindow.webContents.openDevTools();
+
+  if (!sshRuntime.hasAuth) {
+    console.warn(`${SSH_LOG_PREFIX} Startup SSH health check skipped: no SSH auth configured`);
+    return;
+  }
 
   try {
     await sshExecutor.checkConnection({ timeoutMs: 7_000 });

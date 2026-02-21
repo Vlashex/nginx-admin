@@ -63,6 +63,13 @@ export class SSHExecutor implements RemoteExecutor<RouteCommandMap> {
     this.log("info", "SSH health check completed successfully");
   }
 
+  async runShell(command: string, options?: RemoteExecuteOptions): Promise<string> {
+    this.log("info", "Executing bootstrap shell command", {
+      timeoutMs: options?.timeoutMs ?? 30_000,
+    });
+    return this.execWithRetry("shell", command, options);
+  }
+
   async shutdown(): Promise<void> {
     await this.connectionManager.shutdown();
   }
