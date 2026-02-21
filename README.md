@@ -21,7 +21,7 @@
 - `docs/09-design-decisions.md` — архитектурные решения и сравнение подходов
 - `docs/10-consistency-model.md` — модель согласованности и reconciliation
 - `docs/11-failure-model.md` — модель отказов и rollback-поведение
-- `docs/diagrams/*.puml` — формальные диаграммы
+- `docs/diagrams/*.md` — формальные диаграммы (Mermaid, GitHub-native)
 - `state-schema/state.schema.json` — JSON Schema состояния
 - `api/openapi.yaml` — контракт API control plane
 
