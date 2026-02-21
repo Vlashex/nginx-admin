@@ -1,0 +1,16 @@
+﻿[Unit]
+Description=nginx-admin control plane daemon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/default/nginx-admin
+ExecStart=/usr/bin/nginx-admind
+Restart=on-failure
+RestartSec=2
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target

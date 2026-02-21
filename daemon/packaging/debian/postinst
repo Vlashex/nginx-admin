@@ -1,0 +1,16 @@
+﻿#!/bin/sh
+set -e
+
+if ! id -u nginx-admin >/dev/null 2>&1; then
+  useradd --system --home /nonexistent --shell /usr/sbin/nologin nginx-admin || true
+fi
+
+mkdir -p /etc/nginx-admin /var/lib/nginx-admin/backups /var/log/nginx-admin
+chown -R root:root /etc/nginx-admin /var/lib/nginx-admin /var/log/nginx-admin
+chmod 755 /etc/nginx-admin /var/lib/nginx-admin /var/log/nginx-admin
+
+systemctl daemon-reload || true
+systemctl enable nginx-admin.service || true
+systemctl restart nginx-admin.service || true
+
+exit 0

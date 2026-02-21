@@ -2,6 +2,10 @@
 name = "nginx-admind"
 version = "0.1.0"
 edition = "2021"
+description = "NGINX Admin control plane daemon"
+license = "MIT"
+repository = "https://github.com/Vlashex/nginx-admin"
+readme = "README.md"
 
 [dependencies]
 axum = { version = "0.7", features = ["http1", "json"] }
@@ -14,3 +18,17 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 sha2 = "0.10"
 hex = "0.4"
+
+[package.metadata.deb]
+name = "nginx-admin"
+maintainer = "Vlashex"
+copyright = "2026, Vlashex"
+depends = "$auto, systemd, nginx"
+section = "admin"
+priority = "optional"
+maintainer-scripts = "packaging/debian"
+assets = [
+  ["target/release/nginx-admind", "usr/bin/nginx-admind", "755"],
+  ["packaging/nginx-admin.service", "lib/systemd/system/nginx-admin.service", "644"],
+  ["packaging/nginx-admin.env", "etc/default/nginx-admin", "644"],
+]

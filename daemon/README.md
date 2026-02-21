@@ -40,3 +40,26 @@ Rust daemon implementing control plane MVP for single-host operation.
 cd daemon
 cargo run
 ```
+
+## Debian packaging
+
+```bash
+cd daemon
+cargo install cargo-deb --locked
+cargo build --release
+cargo deb --no-build
+```
+
+Package output: `daemon/target/debian/*.deb`
+
+## GitHub CI/CD release
+
+Workflow: `.github/workflows/daemon-deb-release.yml`
+
+- On tag push (`daemon-v*` or `v*`) it:
+  - builds `nginx-admind` release binary
+  - builds `.deb` package via `cargo-deb`
+  - uploads package as workflow artifact
+  - publishes `.deb` into GitHub Release assets for that tag
+
+Recommended release tag format: `daemon-v0.1.0`

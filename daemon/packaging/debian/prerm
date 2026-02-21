@@ -1,0 +1,9 @@
+﻿#!/bin/sh
+set -e
+
+if [ "$1" = "remove" ]; then
+  systemctl stop nginx-admin.service || true
+  systemctl disable nginx-admin.service || true
+fi
+
+exit 0
