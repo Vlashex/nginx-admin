@@ -1,8 +1,8 @@
-import type { PreloadRemoteBridge } from "../preload/remoteBridge";
+import type { PreloadBootstrapBridge } from "../preload/remoteBridge";
 
 declare global {
   interface Window {
-    remoteBridge: PreloadRemoteBridge;
+    bootstrapBridge: PreloadBootstrapBridge;
   }
 }
 

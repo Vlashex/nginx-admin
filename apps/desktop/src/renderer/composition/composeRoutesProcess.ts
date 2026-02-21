@@ -1,11 +1,11 @@
 import { RoutesProcess } from "@vlashex/app/processes/RoutesProcess";
 import { createTransitionalRouteGateway } from "@vlashex/infra/repositories/createTransitionalRouteGateway";
-import { ElectronExecutor } from "../adapters/ElectronExecutor.js";
+import { LocalRouteExecutor } from "../adapters/LocalRouteExecutor.js";
 import { createRoutesProjectionAdapter } from "../projection/routesProjectionAdapter.js";
 
 export const composeRoutesProcess = (): RoutesProcess => {
-  const executor = new ElectronExecutor();
-  // TODO(daemon-2.x): use daemon API transport after bootstrap; keep SSH as transitional 1.x only.
+  const executor = new LocalRouteExecutor();
+  // TODO(daemon-2.x): route renderer through daemon API; keep desktop local until daemon bootstrap is introduced.
   const repository = createTransitionalRouteGateway(executor);
   const projection = createRoutesProjectionAdapter();
 

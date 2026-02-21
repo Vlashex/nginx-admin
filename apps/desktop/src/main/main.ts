@@ -1,7 +1,7 @@
 import { app, BrowserWindow } from "electron";
 import fs from "node:fs";
 import path from "node:path";
-import { registerRemoteHandlers } from "./ipc/registerRemoteHandlers.js";
+import { registerBootstrapHandlers } from "./ipc/registerBootstrapHandlers.js";
 import { SSHExecutor } from "./ssh/SSHExecutor.js";
 
 const DEFAULT_WIDTH = 1400;
@@ -201,7 +201,7 @@ loadDesktopEnv();
 const sshExecutor = createSshExecutor();
 
 app.whenReady().then(async () => {
-  registerRemoteHandlers(sshExecutor);
+  registerBootstrapHandlers(sshExecutor);
   mainWindow = await createWindow();
   mainWindow.webContents.openDevTools();
 

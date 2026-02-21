@@ -8,6 +8,7 @@
   "exports": {
     ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
     "./repositories/SSHRouteRepository": { "types": "./dist/repositories/SSHRouteRepository.d.ts", "import": "./dist/repositories/SSHRouteRepository.js" },
+    "./repositories/CommandRouteGateway": { "types": "./dist/repositories/CommandRouteGateway.d.ts", "import": "./dist/repositories/CommandRouteGateway.js" },
     "./repositories/createTransitionalRouteGateway": { "types": "./dist/repositories/createTransitionalRouteGateway.d.ts", "import": "./dist/repositories/createTransitionalRouteGateway.js" },
     "./repositories/createRouteRepository": { "types": "./dist/repositories/createRouteRepository.d.ts", "import": "./dist/repositories/createRouteRepository.js" },
     "./repositories/BrowserLocalStorageRouteRepository": { "types": "./dist/repositories/BrowserLocalStorageRouteRepository.d.ts", "import": "./dist/repositories/BrowserLocalStorageRouteRepository.js" },
@@ -15,7 +16,9 @@
   },
   "scripts": {
     "build": "tsc -b tsconfig.build.json",
-    "clean": "rimraf dist"
+    "test": "vitest run",
+    "clean": "rimraf dist",
+    "clean:src": "rimraf --glob \"src/**/*.js\" \"src/**/*.d.ts\" \"src/**/*.d.ts.map\" \"src/**/*.js.map\""
   },
   "devDependencies": {
     "rimraf": "^6.0.1",

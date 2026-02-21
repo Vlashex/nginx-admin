@@ -3,15 +3,22 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
+    "tsBuildInfoFile": "dist/.tsbuildinfo",
+
     "declaration": true,
     "declarationMap": true,
     "declarationDir": "dist",
+
     "emitDeclarationOnly": false,
+
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "target": "ES2022",
+
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "types": []
   },
   "include": ["src"]
 }

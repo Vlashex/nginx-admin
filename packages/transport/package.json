@@ -6,14 +6,16 @@
   "types": "./dist/index.d.ts",
   "files": ["dist"],
   "exports": {
-    ".": "./dist/index.js",
-    "./RemoteExecutor": "./dist/RemoteExecutor.js",
-    "./ipc": "./dist/ipc.js",
-    "./contracts/routeCommands": "./dist/contracts/routeCommands.js"
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./RemoteExecutor": { "types": "./dist/RemoteExecutor.d.ts", "import": "./dist/RemoteExecutor.js" },
+    "./ipc": { "types": "./dist/ipc.d.ts", "import": "./dist/ipc.js" },
+    "./contracts/routeCommands": { "types": "./dist/contracts/routeCommands.d.ts", "import": "./dist/contracts/routeCommands.js" },
+    "./contracts/bootstrap": { "types": "./dist/contracts/bootstrap.d.ts", "import": "./dist/contracts/bootstrap.js" }
   },
   "scripts": {
     "build": "tsc -b tsconfig.build.json",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "test": "vitest run"
   },
   "devDependencies": {
     "rimraf": "^6.0.1",
