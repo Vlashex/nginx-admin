@@ -1,5 +1,4 @@
-import type { RouteRepository } from "@vlashex/core";
-import type { Route } from "@vlashex/core";
+import type { Route, RouteRepository } from "@vlashex/core";
 
 type RemoteCommand = "routes:list" | "routes:save" | "routes:toggle";
 
@@ -24,22 +23,20 @@ const resolveRemoteBridge = (): RemoteBridgeApi | null => {
     return null;
   }
 
-  const maybeBridge = (window as unknown as { remoteBridge?: RemoteBridgeApi }).remoteBridge;
-  if (!maybeBridge || typeof maybeBridge.execute !== "function") {
+  const bridge = (window as unknown as { remoteBridge?: RemoteBridgeApi }).remoteBridge;
+  if (!bridge || typeof bridge.execute !== "function") {
     return null;
   }
 
-  return maybeBridge;
+  return bridge;
 };
 
 const toMap = (routes: Route[]): Map<string, Route> => new Map(routes.map((route) => [route.id, route]));
 
+// Transitional 1.x repository over Electron IPC/SSH bridge.
+// TODO(daemon-2.x): replace transport bridge with daemon API repository.
 export class RemoteBridgeRouteRepository implements RouteRepository {
-  private readonly bridge: RemoteBridgeApi;
-
-  constructor(bridge: RemoteBridgeApi) {
-    this.bridge = bridge;
-  }
+  constructor(private readonly bridge: RemoteBridgeApi) {}
 
   static isAvailable(): boolean {
     return resolveRemoteBridge() !== null;
@@ -58,17 +55,17 @@ export class RemoteBridgeRouteRepository implements RouteRepository {
   }
 
   async findById(id: string): Promise<Route | null> {
-    const all = await this.loadAll();
-    return all.get(id) ?? null;
+    const routes = await this.loadAll();
+    return routes.get(id) ?? null;
   }
 
   async findAll(): Promise<Route[]> {
-    const all = await this.loadAll();
-    return Array.from(all.values());
+    const routes = await this.loadAll();
+    return Array.from(routes.values());
   }
 
   async delete(id: string): Promise<void> {
-    throw new Error(`Delete is not supported over SSH transport for route "${id}"`);
+    throw new Error(`Delete is not supported over transitional transport for route "${id}"`);
   }
 
   async saveAll(routes: Map<string, Route>): Promise<void> {

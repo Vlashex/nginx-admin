@@ -7,7 +7,11 @@
   "files": ["dist"],
   "exports": {
     ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
-    "./repositories/SSHRouteRepository": { "types": "./dist/repositories/SSHRouteRepository.d.ts", "import": "./dist/repositories/SSHRouteRepository.js" }
+    "./repositories/SSHRouteRepository": { "types": "./dist/repositories/SSHRouteRepository.d.ts", "import": "./dist/repositories/SSHRouteRepository.js" },
+    "./repositories/createTransitionalRouteGateway": { "types": "./dist/repositories/createTransitionalRouteGateway.d.ts", "import": "./dist/repositories/createTransitionalRouteGateway.js" },
+    "./repositories/createRouteRepository": { "types": "./dist/repositories/createRouteRepository.d.ts", "import": "./dist/repositories/createRouteRepository.js" },
+    "./repositories/BrowserLocalStorageRouteRepository": { "types": "./dist/repositories/BrowserLocalStorageRouteRepository.d.ts", "import": "./dist/repositories/BrowserLocalStorageRouteRepository.js" },
+    "./repositories/RemoteBridgeRouteRepository": { "types": "./dist/repositories/RemoteBridgeRouteRepository.d.ts", "import": "./dist/repositories/RemoteBridgeRouteRepository.js" }
   },
   "scripts": {
     "build": "tsc -b tsconfig.build.json",

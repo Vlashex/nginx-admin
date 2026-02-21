@@ -3,6 +3,8 @@ import type { Route, RouteDraft, RouteId } from "@vlashex/core/domain/Route";
 import type { RemoteExecutor } from "@vlashex/transport/RemoteExecutor";
 import type { RouteCommandMap } from "@vlashex/transport/contracts/routeCommands";
 
+// Transitional transport gateway for 1.x.
+// TODO(daemon-2.x): replace with daemon API repository once state/revision endpoints exist.
 export class SSHRouteRepository implements RouteGateway {
   constructor(private readonly executor: RemoteExecutor<RouteCommandMap>) {}
 

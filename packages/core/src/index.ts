@@ -1,4 +1,5 @@
 export * from "./entities/types";
+export * from "./domain/ControlPlaneState";
 export * from "./ports/RouteGateway";
 export * from "./repositories/RouteRepository";
 export * from "./repositories/LogRepository";
