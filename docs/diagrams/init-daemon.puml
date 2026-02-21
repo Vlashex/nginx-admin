@@ -1,0 +1,95 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+
+title nginx-admin Full Bootstrap (Electron + install.sh + Backend Init)
+
+actor Operator
+participant "UI (Renderer)" as UI
+participant "Electron Main\n(SSH Orchestrator)" as MAIN
+participant "SSH Executor" as SSH
+participant "Remote Host" as HOST
+participant "install.sh" as SCRIPT
+participant "apt/dpkg" as PKG
+participant "Filesystem" as FS
+participant "systemd" as SD
+participant "nginx-admind (backend)" as DAEMON
+participant "NGINX" as NGINX
+
+== 1. Operator triggers bootstrap ==
+
+Operator -> UI : Connect to host
+UI -> MAIN : bootstrap()
+MAIN -> SSH : open ssh session
+
+== 2. Execute remote installer ==
+
+MAIN -> SSH : curl -fsSL https://repo/install.sh | sudo bash
+SSH -> HOST : download script
+HOST -> SCRIPT : execute as root
+
+== 3. install.sh logic ==
+
+SCRIPT -> HOST : detect architecture (uname -m)
+SCRIPT -> HOST : detect distro (/etc/os-release)
+
+SCRIPT -> HOST : download nginx-admin_<arch>.deb
+SCRIPT -> PKG : apt install ./nginx-admin_<arch>.deb
+
+PKG -> FS : copy binary to /usr/bin/nginx-admin
+PKG -> FS : install systemd unit file
+
+SCRIPT -> HOST : create system user (nginx-admin)
+SCRIPT -> FS : create /etc/nginx-admin
+SCRIPT -> FS : create /var/lib/nginx-admin
+SCRIPT -> FS : create /var/log/nginx-admin
+
+SCRIPT -> SD : systemctl daemon-reload
+SCRIPT -> SD : systemctl enable nginx-admin.service
+SCRIPT -> SD : systemctl start nginx-admin.service
+
+SD -> DAEMON : start backend process
+
+== 4. Backend Initialization ==
+
+DAEMON -> FS : check state.json exists
+
+alt state.json missing
+    DAEMON -> FS : create initial state.json (revision=0)
+end
+
+DAEMON -> DAEMON : initialize reconcile loop
+DAEMON -> DAEMON : start HTTP API (127.0.0.1:8081)
+
+== 5. Initial Reconcile ==
+
+DAEMON -> DAEMON : Render(state)
+DAEMON -> FS : compute runtime hash
+DAEMON -> NGINX : nginx -t (if needed)
+
+alt drift detected
+    DAEMON -> FS : create backup snapshot
+    DAEMON -> FS : atomic switch runtime
+    DAEMON -> NGINX : reload
+end
+
+== 6. Health Verification ==
+
+SCRIPT -> HOST : systemctl is-active nginx-admin
+SCRIPT -> HOST : nginx-admin status
+
+alt status OK
+    MAIN <-- SSH : Bootstrap SUCCESS
+else failure
+    MAIN <-- SSH : Bootstrap FAILED
+end
+
+note over DAEMON
+Backend now autonomous:
+- HTTP API running (localhost)
+- reconcile loop active
+- state-driven lifecycle enforced
+- Electron no longer required
+end note
+
+@enduml
