@@ -1,6 +1,6 @@
 ﻿[package]
 name = "nginx-admind"
-version = "0.1.0"
+version = "0.0.3"
 edition = "2021"
 description = "NGINX Admin control plane daemon"
 license = "MIT"
