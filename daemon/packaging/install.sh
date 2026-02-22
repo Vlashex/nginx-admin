@@ -9,6 +9,7 @@ TAG_PREFIX="${TAG_PREFIX:-daemon-v}"
 REQUESTED_VERSION="${REQUESTED_VERSION:-}"
 GITHUB_API="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}"
 
+
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "${TMP_DIR}"' EXIT
 
