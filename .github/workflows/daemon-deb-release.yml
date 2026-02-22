@@ -58,9 +58,11 @@ jobs:
           git tag daemon-v${VERSION}
           git push origin daemon-v${VERSION}
 
+      - name: Normalize line endings
+        run: |
+          find packaging/debian -type f -exec sed -i 's/\r$//' {} +
       - name: Prepare maintainer scripts
         run: |
-          find packaging/debian -type f -exec dos2unix {} +
           chmod +x packaging/debian/postinst packaging/debian/prerm packaging/debian/postrm
 
       - name: Build daemon
