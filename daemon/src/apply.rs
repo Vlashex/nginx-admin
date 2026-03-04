@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::{error, info};
+use tracing::{debug, error, info, warn};
 
 pub struct ApplyService {
     store: Arc<StateStore>,
@@ -30,6 +30,11 @@ impl ApplyService {
         let state = self.store.get_state().await;
         let status = self.store.get_status().await;
         if status.observed_revision >= state.revision {
+            debug!(
+                desired_revision = status.desired_revision,
+                observed_revision = status.observed_revision,
+                "reconcile skipped (already in sync)"
+            );
             return Ok(());
         }
 
@@ -38,9 +43,14 @@ impl ApplyService {
 
         let result = (|| {
             let rendered = renderer::render_to_staging(&self.config.staging_dir, &state)?;
+            info!(
+                revision = state.revision,
+                staging_dir = %self.config.staging_dir.display(),
+                "rendered staging config"
+            );
             self.validate(&rendered.staging_conf_path)?;
-            self.backup()?
-                ;
+            let snapshot_dir = self.backup()?;
+            info!(revision = state.revision, backup_dir = %snapshot_dir.display(), "backup created");
             self.commit_staging()?;
             self.reload()?;
             Ok::<String, DaemonError>(rendered.config_hash)
@@ -62,6 +72,7 @@ impl ApplyService {
 
     fn validate(&self, staging_conf: &Path) -> Result<()> {
         if self.config.dry_run {
+            debug!("validate skipped (dry_run)");
             return Ok(());
         }
 
@@ -69,6 +80,7 @@ impl ApplyService {
             .config
             .nginx_test_cmd
             .replace("{staging_conf}", &staging_conf.to_string_lossy());
+        debug!(command = %cmd, "running nginx config test");
         run_shell(&cmd)
     }
 
@@ -98,14 +110,20 @@ impl ApplyService {
         }
 
         copy_dir_recursive(&self.config.staging_dir, &self.config.runtime_output_dir)?;
+        info!(
+            runtime_dir = %self.config.runtime_output_dir.display(),
+            "staging committed"
+        );
         Ok(())
     }
 
     fn reload(&self) -> Result<()> {
         if self.config.dry_run {
+            debug!("reload skipped (dry_run)");
             return Ok(());
         }
 
+        info!(command = %self.config.reload_cmd, "reloading nginx");
         run_shell(&self.config.reload_cmd)
     }
 }
@@ -139,9 +157,11 @@ fn run_shell(command: &str) -> Result<()> {
     let output = Command::new("sh").arg("-c").arg(command).output()?;
 
     if output.status.success() {
+        debug!(command, "command succeeded");
         Ok(())
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr).trim().to_owned();
+        warn!(command, stderr = %stderr, "command failed");
         Err(DaemonError::Internal(format!(
             "command failed [{}]: {}",
             command, stderr

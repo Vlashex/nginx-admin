@@ -2,6 +2,7 @@
 use crate::model::{ControlPlaneState, RouteAction};
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
+use tracing::debug;
 
 pub struct RenderResult {
     pub config_hash: String,
@@ -9,6 +10,11 @@ pub struct RenderResult {
 }
 
 pub fn render_to_staging(staging_dir: &Path, state: &ControlPlaneState) -> Result<RenderResult> {
+    debug!(
+        staging_dir = %staging_dir.display(),
+        servers = state.servers.len(),
+        "rendering staging config"
+    );
     if staging_dir.exists() {
         std::fs::remove_dir_all(staging_dir)?;
     }
@@ -101,6 +107,7 @@ pub fn render_to_staging(staging_dir: &Path, state: &ControlPlaneState) -> Resul
 
     let config_hash = hash_directory(staging_dir)?;
 
+    debug!(config_hash = %config_hash, "rendered staging config");
     Ok(RenderResult {
         config_hash,
         staging_conf_path,

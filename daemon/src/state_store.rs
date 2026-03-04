@@ -4,6 +4,7 @@ use chrono::Utc;
 use std::collections::HashSet;
 use std::path::Path;
 use tokio::sync::RwLock;
+use tracing::{debug, info, warn};
 
 pub struct StateStore {
     state: RwLock<ControlPlaneState>,
@@ -13,6 +14,7 @@ pub struct StateStore {
 
 impl StateStore {
     pub async fn load_or_init(state_path: std::path::PathBuf) -> Result<Self> {
+        info!(state_path = %state_path.display(), "loading state store");
         let state = if Path::new(&state_path).exists() {
             let raw = tokio::fs::read_to_string(&state_path).await?;
             serde_json::from_str::<ControlPlaneState>(&raw)?
@@ -22,10 +24,16 @@ impl StateStore {
             }
             let initial = ControlPlaneState::initial();
             write_state_file(&state_path, &initial).await?;
+            info!(state_path = %state_path.display(), "state initialized");
             initial
         };
 
         validate_state(&state)?;
+        info!(
+            revision = state.revision,
+            servers = state.servers.len(),
+            "state loaded"
+        );
 
         let status = RuntimeStatus {
             desired_revision: state.revision,
@@ -54,6 +62,11 @@ impl StateStore {
     pub async fn put_state(&self, expected_revision: u64, mut draft: ControlPlaneState) -> Result<ControlPlaneState> {
         let mut state_guard = self.state.write().await;
         if state_guard.revision != expected_revision {
+            warn!(
+                expected_revision,
+                actual_revision = state_guard.revision,
+                "revision conflict"
+            );
             return Err(DaemonError::Conflict(format!(
                 "revision mismatch: expected {}, actual {}",
                 expected_revision, state_guard.revision
@@ -72,6 +85,12 @@ impl StateStore {
         write_state_file(&self.state_path, &draft).await?;
 
         *state_guard = draft.clone();
+        info!(
+            revision = draft.revision,
+            updated_by = %draft.updated_by,
+            servers = draft.servers.len(),
+            "state updated"
+        );
 
         let mut status_guard = self.status.write().await;
         status_guard.desired_revision = draft.revision;
@@ -87,6 +106,7 @@ impl StateStore {
         status_guard.sync_state = SyncState::Applying;
         status_guard.updated_at = Utc::now();
         status_guard.last_error = None;
+        debug!("status set to applying");
     }
 
     pub async fn mark_in_sync(&self, observed_revision: u64, config_hash: String) {
@@ -97,6 +117,7 @@ impl StateStore {
         status_guard.active_config_hash = Some(config_hash);
         status_guard.updated_at = Utc::now();
         status_guard.last_error = None;
+        info!(revision = observed_revision, "status set to in_sync");
     }
 
     pub async fn mark_degraded(&self, error: String) {
@@ -104,6 +125,7 @@ impl StateStore {
         status_guard.sync_state = SyncState::Degraded;
         status_guard.last_error = Some(error);
         status_guard.updated_at = Utc::now();
+        warn!("status set to degraded");
     }
 }
 

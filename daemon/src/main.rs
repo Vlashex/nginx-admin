@@ -29,6 +29,16 @@ async fn main() {
 
 async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let config = DaemonConfig::from_env();
+    info!(
+        bind_addr = %config.bind_addr,
+        state_path = %config.state_path.display(),
+        staging_dir = %config.staging_dir.display(),
+        runtime_output_dir = %config.runtime_output_dir.display(),
+        backups_dir = %config.backups_dir.display(),
+        reconcile_interval_secs = config.reconcile_interval.as_secs(),
+        dry_run = config.dry_run,
+        "daemon configuration loaded"
+    );
     let state_store = Arc::new(StateStore::load_or_init(config.state_path.clone()).await?);
     let apply_service = Arc::new(ApplyService::new(state_store.clone(), config.clone()));
 
