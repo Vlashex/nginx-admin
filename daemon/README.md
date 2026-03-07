@@ -24,7 +24,10 @@ Rust daemon implementing control plane MVP for single-host operation.
 
 ## Environment
 
-- `DAEMON_BIND_ADDR` (default: `127.0.0.1:8081`)
+- `DAEMON_UNIX_SOCKET_PATH` (default: `/run/nginx-admin.sock`)
+- `DAEMON_SOCKET_GROUP` (default: `www-data`)
+- `DAEMON_NGINX_API_CONF_PATH` (default: `/etc/nginx/snippets/nginx-admin-location.conf`)
+- `DAEMON_NGINX_SERVER_CONF_PATH` (default: `/etc/nginx/sites-enabled/default`)
 - `DAEMON_STATE_PATH` (default: `/etc/nginx-admin/state.json`)
 - `DAEMON_BACKUPS_DIR` (default: `/var/lib/nginx-admin/backups`)
 - `DAEMON_STAGING_DIR` (default: `/etc/nginx-admin/staging`)

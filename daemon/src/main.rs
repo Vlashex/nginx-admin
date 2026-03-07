@@ -9,11 +9,22 @@ mod state_store;
 use api::{build_router, AppContext};
 use apply::ApplyService;
 use config::DaemonConfig;
+#[cfg(unix)]
+use hyper::service::service_fn;
+#[cfg(unix)]
+use hyper::server::conn::http1;
+#[cfg(unix)]
+use hyper_util::rt::TokioIo;
 use state_store::StateStore;
-use std::net::SocketAddr;
+use std::path::Path;
+use std::process::Command;
 use std::sync::Arc;
 use tokio::time::{sleep, Duration};
+#[cfg(unix)]
+use tower::ServiceExt;
 use tracing::{error, info, warn};
+
+const NGINX_API_CONFIG_MARKER: &str = "# managed by nginx-admind api proxy";
 
 #[tokio::main]
 async fn main() {
@@ -30,7 +41,10 @@ async fn main() {
 async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let config = DaemonConfig::from_env();
     info!(
-        bind_addr = %config.bind_addr,
+        unix_socket_path = %config.unix_socket_path.display(),
+        socket_group = %config.socket_group,
+        nginx_api_conf_path = %config.nginx_api_conf_path.display(),
+        nginx_server_conf_path = %config.nginx_server_conf_path.display(),
         state_path = %config.state_path.display(),
         staging_dir = %config.staging_dir.display(),
         runtime_output_dir = %config.runtime_output_dir.display(),
@@ -39,6 +53,9 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         dry_run = config.dry_run,
         "daemon configuration loaded"
     );
+
+    ensure_nginx_api_proxy_config(&config);
+
     let state_store = Arc::new(StateStore::load_or_init(config.state_path.clone()).await?);
     let apply_service = Arc::new(ApplyService::new(state_store.clone(), config.clone()));
 
@@ -53,13 +70,32 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let router = build_router(ctx);
-    let addr: SocketAddr = config.bind_addr.parse()?;
-    info!(bind = %addr, "starting nginx-admind");
+    #[cfg(unix)]
+    {
+        prepare_unix_socket_path(&config.unix_socket_path)?;
 
-    let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, router)
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
+        let listener = tokio::net::UnixListener::bind(&config.unix_socket_path)?;
+        if let Err(err) =
+            configure_unix_socket_permissions(&config.unix_socket_path, &config.socket_group)
+        {
+            cleanup_unix_socket_path(&config.unix_socket_path);
+            return Err(err);
+        }
+        info!(
+            socket = %config.unix_socket_path.display(),
+            "unix socket created for HTTP server"
+        );
+
+        let serve_result = serve_unix(listener, router).await;
+        cleanup_unix_socket_path(&config.unix_socket_path);
+        serve_result?;
+    }
+
+    #[cfg(not(unix))]
+    {
+        let _ = router;
+        return Err("unix socket mode is only supported on unix targets".into());
+    }
 
     Ok(())
 }
@@ -97,4 +133,314 @@ async fn shutdown_signal() {
     }
 
     info!("shutdown signal received");
+}
+
+#[cfg(unix)]
+async fn serve_unix(
+    listener: tokio::net::UnixListener,
+    router: axum::Router,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let shutdown = shutdown_signal();
+    tokio::pin!(shutdown);
+
+    loop {
+        tokio::select! {
+            _ = &mut shutdown => {
+                break;
+            }
+            accept_result = listener.accept() => {
+                let (stream, _) = accept_result?;
+                let io = TokioIo::new(stream);
+                let app = router.clone();
+
+                tokio::spawn(async move {
+                    let service = service_fn(move |request| {
+                        let app = app.clone();
+                        async move { app.oneshot(request.map(axum::body::Body::new)).await }
+                    });
+                    let result = http1::Builder::new().serve_connection(io, service).await;
+                    if let Err(err) = result {
+                        warn!(error = %err, "unix HTTP connection failed");
+                    }
+                });
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn ensure_nginx_api_proxy_config(config: &DaemonConfig) {
+    let conf_path = &config.nginx_api_conf_path;
+    let server_conf_path = &config.nginx_server_conf_path;
+    let proxy_pass_marker = format!(
+        "proxy_pass http://unix:{}:/;",
+        config.unix_socket_path.display()
+    );
+    let desired_config = format!(
+        "{marker}\n\nlocation /api/ {{\nproxy_pass http://unix:{socket}:/;\nproxy_http_version 1.1;\nproxy_set_header Host $host;\nproxy_set_header X-Real-IP $remote_addr;\n}}\n",
+        marker = NGINX_API_CONFIG_MARKER,
+        socket = config.unix_socket_path.display()
+    );
+    let existing = std::fs::read_to_string(conf_path).ok();
+    let should_update = match &existing {
+        None => true,
+        Some(current) => {
+            !current.contains(NGINX_API_CONFIG_MARKER)
+                || !current.contains(&proxy_pass_marker)
+                || current.contains("server {")
+        }
+    };
+
+    let mut changed = false;
+
+    match cleanup_legacy_conf_d_api_snippet(conf_path) {
+        Ok(legacy_removed) => {
+            if legacy_removed {
+                changed = true;
+            }
+        }
+        Err(err) => {
+            error!(error = %err, "failed to cleanup legacy nginx API conf.d snippet");
+        }
+    }
+
+    if should_update {
+        if let Some(parent) = conf_path.parent() {
+            if let Err(err) = std::fs::create_dir_all(parent) {
+                error!(
+                    path = %parent.display(),
+                    error = %err,
+                    "failed to create nginx config directory"
+                );
+                return;
+            }
+        }
+
+        if let Err(err) = std::fs::write(conf_path, desired_config) {
+            error!(
+                path = %conf_path.display(),
+                error = %err,
+                "failed to inject nginx API proxy config"
+            );
+            return;
+        }
+        info!(
+            path = %conf_path.display(),
+            "nginx API proxy config injected"
+        );
+        changed = true;
+    }
+
+    match ensure_include_in_server_block(server_conf_path, conf_path) {
+        Ok(include_changed) => {
+            if include_changed {
+                changed = true;
+            }
+        }
+        Err(err) => {
+            error!(
+                server_conf = %server_conf_path.display(),
+                include_conf = %conf_path.display(),
+                error = %err,
+                "failed to ensure nginx include for API snippet"
+            );
+            return;
+        }
+    }
+
+    if !changed {
+        info!(
+            path = %conf_path.display(),
+            server_conf = %server_conf_path.display(),
+            "nginx API proxy config already up to date, skipping nginx -t/reload"
+        );
+        return;
+    }
+
+    match run_shell("nginx -t") {
+        Ok(()) => {
+            info!("nginx -t passed");
+        }
+        Err(err) => {
+            error!(error = %err, "nginx -t failed, skipping reload");
+            return;
+        }
+    }
+
+    match run_shell("nginx -s reload") {
+        Ok(()) => {
+            info!("nginx reload completed");
+        }
+        Err(err) => {
+            error!(error = %err, "nginx reload failed");
+        }
+    }
+}
+
+fn cleanup_legacy_conf_d_api_snippet(
+    active_conf_path: &Path,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let legacy_path = Path::new("/etc/nginx/conf.d/nginx-admin.conf");
+    if active_conf_path == legacy_path || !legacy_path.exists() {
+        return Ok(false);
+    }
+
+    let content = std::fs::read_to_string(legacy_path)?;
+    if content.contains(NGINX_API_CONFIG_MARKER) {
+        std::fs::remove_file(legacy_path)?;
+        info!(
+            path = %legacy_path.display(),
+            "removed legacy nginx API snippet from conf.d"
+        );
+        return Ok(true);
+    }
+
+    Ok(false)
+}
+
+fn ensure_include_in_server_block(
+    server_conf_path: &Path,
+    include_path: &Path,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let content = std::fs::read_to_string(server_conf_path)?;
+    let include_line = format!("include {};", include_path.display());
+    if content.contains(&include_line) {
+        return Ok(false);
+    }
+
+    let server_idx = content
+        .find("server")
+        .ok_or_else(|| "no server block found in nginx server config".to_string())?;
+    let open_rel = content[server_idx..]
+        .find('{')
+        .ok_or_else(|| "malformed server block (missing '{')".to_string())?;
+    let open_idx = server_idx + open_rel;
+
+    let mut depth: i32 = 0;
+    let mut close_idx: Option<usize> = None;
+    for (idx, ch) in content.char_indices().skip(open_idx) {
+        match ch {
+            '{' => depth += 1,
+            '}' => {
+                depth -= 1;
+                if depth == 0 {
+                    close_idx = Some(idx);
+                    break;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let close_idx = close_idx.ok_or_else(|| "malformed server block (missing '}')".to_string())?;
+    let include_stmt = format!("    include {};\n", include_path.display());
+
+    let mut new_content = String::with_capacity(content.len() + include_stmt.len());
+    new_content.push_str(&content[..close_idx]);
+    if !new_content.ends_with('\n') {
+        new_content.push('\n');
+    }
+    new_content.push_str(&include_stmt);
+    new_content.push_str(&content[close_idx..]);
+
+    std::fs::write(server_conf_path, new_content)?;
+    info!(
+        server_conf = %server_conf_path.display(),
+        include_conf = %include_path.display(),
+        "nginx server config updated to include API snippet"
+    );
+    Ok(true)
+}
+
+fn prepare_unix_socket_path(path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    if path.exists() {
+        std::fs::remove_file(path)?;
+        info!(socket = %path.display(), "removed existing unix socket file");
+    }
+    Ok(())
+}
+
+fn configure_unix_socket_permissions(
+    path: &Path,
+    socket_group: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+
+        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o660))?;
+        if group_exists(socket_group) {
+            if let Err(err) = run_shell(&format!("chgrp {} {}", socket_group, shell_escape(path))) {
+                warn!(
+                    socket = %path.display(),
+                    group = %socket_group,
+                    error = %err,
+                    "failed to change socket group; continuing"
+                );
+            }
+        } else {
+            warn!(
+                socket = %path.display(),
+                group = %socket_group,
+                "socket group does not exist; continuing without chgrp"
+            );
+        }
+        info!(
+            socket = %path.display(),
+            mode = "660",
+            group = %socket_group,
+            "unix socket permissions configured"
+        );
+    }
+    Ok(())
+}
+
+fn cleanup_unix_socket_path(path: &Path) {
+    if !path.exists() {
+        return;
+    }
+
+    match std::fs::remove_file(path) {
+        Ok(()) => info!(socket = %path.display(), "unix socket file removed"),
+        Err(err) => warn!(
+            socket = %path.display(),
+            error = %err,
+            "failed to remove unix socket file"
+        ),
+    }
+}
+
+fn run_shell(command: &str) -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(target_os = "windows")]
+    let output = Command::new("cmd").arg("/C").arg(command).output()?;
+
+    #[cfg(not(target_os = "windows"))]
+    let output = Command::new("sh").arg("-c").arg(command).output()?;
+
+    if output.status.success() {
+        Ok(())
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_owned();
+        Err(format!("command failed [{}]: {}", command, stderr).into())
+    }
+}
+
+fn shell_escape(path: &Path) -> String {
+    let raw = path.to_string_lossy();
+    format!("'{}'", raw.replace('\'', "'\"'\"'"))
+}
+
+#[cfg(unix)]
+fn group_exists(group: &str) -> bool {
+    if group.is_empty() {
+        return false;
+    }
+
+    Command::new("getent")
+        .arg("group")
+        .arg(group)
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
 }
