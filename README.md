@@ -44,7 +44,7 @@
 * reconcile loop
 * drift detection
 * rollback через snapshot
-* встроенный HTTP API
+* встроенный HTTP API через Unix socket (`/run/nginx-admin.sock`)
 
 Daemon — **единственная точка изменения runtime**.
 

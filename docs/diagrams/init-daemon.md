@@ -47,7 +47,7 @@ sequenceDiagram
     DAEMON->>FS: create initial state.json (revision=0)
   end
   DAEMON->>DAEMON: initialize reconcile loop
-  DAEMON->>DAEMON: start HTTP API (127.0.0.1:8081)
+  DAEMON->>DAEMON: start HTTP API via Unix socket (/run/nginx-admin.sock)
 
   %% 5. Initial reconcile
   DAEMON->>DAEMON: Render(state)
@@ -69,5 +69,5 @@ sequenceDiagram
     SSH-->>MAIN: Bootstrap FAILED
   end
 
-  Note over DAEMON: Backend now autonomous<br/>- HTTP API running (localhost)<br/>- reconcile loop active<br/>- state-driven lifecycle enforced<br/>- Electron no longer required
+  Note over DAEMON: Backend now autonomous<br/>- HTTP API via Unix socket (/run/nginx-admin.sock)<br/>- reconcile loop active<br/>- state-driven lifecycle enforced<br/>- Electron no longer required
 ```

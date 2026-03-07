@@ -16,6 +16,8 @@ Rust daemon implementing control plane MVP for single-host operation.
 
 ## API
 
+Daemon API обслуживается через Unix socket: `/run/nginx-admin.sock`.
+
 - `GET /v1/state`
 - `PUT /v1/state` with `If-Match`
 - `GET /v1/runtime/status`
@@ -32,7 +34,7 @@ Rust daemon implementing control plane MVP for single-host operation.
 - `DAEMON_BACKUPS_DIR` (default: `/var/lib/nginx-admin/backups`)
 - `DAEMON_STAGING_DIR` (default: `/etc/nginx-admin/staging`)
 - `DAEMON_RUNTIME_OUTPUT_DIR` (default: `/etc/nginx-admin/generated/runtime`)
-- `DAEMON_NGINX_TEST_CMD` (default: `nginx -t -c {staging_conf}`)
+- `DAEMON_NGINX_TEST_CMD` (default: `nginx -t -p {staging_dir} -c {staging_conf}`)
 - `DAEMON_RELOAD_CMD` (default: `nginx -s reload`)
 - `DAEMON_RECONCILE_INTERVAL_SECS` (default: `2`)
 - `DAEMON_DRY_RUN` (`true`/`false`, default: `false`)

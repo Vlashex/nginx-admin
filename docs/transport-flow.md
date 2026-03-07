@@ -29,4 +29,4 @@
 1. Electron Main по SSH запускает `install.sh`.
 2. Скрипт устанавливает пакет, system user и systemd unit.
 3. `systemd` запускает `nginx-admind`.
-4. Daemon инициализирует `state.json`, локальный API (`127.0.0.1:8081`) и reconcile loop.
+4. Daemon инициализирует `state.json`, локальный API через Unix socket (`/run/nginx-admin.sock`) и reconcile loop.
