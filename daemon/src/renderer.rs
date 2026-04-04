@@ -26,7 +26,7 @@ pub fn render_to_staging(staging_dir: &Path, state: &ControlPlaneState) -> Resul
     root.push_str("worker_processes auto;\n");
     root.push_str("events { worker_connections 1024; }\n");
     root.push_str("http {\n");
-    root.push_str("  include       mime.types;\n");
+    root.push_str("  include       /etc/nginx/mime.types;\n");
     root.push_str("  default_type  application/octet-stream;\n");
     root.push_str("  sendfile        on;\n");
     root.push_str("  keepalive_timeout  65;\n");

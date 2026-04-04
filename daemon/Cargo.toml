@@ -21,6 +21,7 @@ hex = "0.4"
 hyper = { version = "1", features = ["server", "http1"] }
 hyper-util = { version = "0.1", features = ["tokio"] }
 tower = "0.5"
+fs2 = "0.4"
 
 [package.metadata.deb]
 name = "nginx-admin"

@@ -146,7 +146,7 @@ post_install() {
   log "Service started successfully"
 
   if command -v curl >/dev/null 2>&1; then
-    if curl -fsS http://127.0.0.1:8081/healthz >/dev/null 2>&1; then
+    if curl -fsS --unix-socket /run/nginx-admin.sock http://localhost/healthz >/dev/null 2>&1; then
       log "Health check OK"
     else
       log "Health endpoint not responding (non-fatal)"

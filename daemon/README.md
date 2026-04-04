@@ -28,12 +28,10 @@ Daemon API обслуживается через Unix socket: `/run/nginx-admin.
 
 - `DAEMON_UNIX_SOCKET_PATH` (default: `/run/nginx-admin.sock`)
 - `DAEMON_SOCKET_GROUP` (default: `www-data`)
-- `DAEMON_NGINX_API_CONF_PATH` (default: `/etc/nginx/snippets/nginx-admin-location.conf`)
-- `DAEMON_NGINX_SERVER_CONF_PATH` (default: `/etc/nginx/sites-enabled/default`)
 - `DAEMON_STATE_PATH` (default: `/etc/nginx-admin/state.json`)
 - `DAEMON_BACKUPS_DIR` (default: `/var/lib/nginx-admin/backups`)
 - `DAEMON_STAGING_DIR` (default: `/etc/nginx-admin/staging`)
-- `DAEMON_RUNTIME_OUTPUT_DIR` (default: `/etc/nginx-admin/generated/runtime`)
+- `DAEMON_RUNTIME_OUTPUT_DIR` (default: `/etc/nginx-admin/generated`)
 - `DAEMON_NGINX_TEST_CMD` (default: `nginx -t -p {staging_dir} -c {staging_conf}`)
 - `DAEMON_RELOAD_CMD` (default: `nginx -s reload`)
 - `DAEMON_RECONCILE_INTERVAL_SECS` (default: `2`)
@@ -51,11 +49,15 @@ cargo run
 ```bash
 cd daemon
 cargo install cargo-deb --locked
+sudo apt-get install -y dpkg-dev
 cargo build --release
 cargo deb --no-build
 ```
 
 Package output: `daemon/target/debian/*.deb`
+
+`dpkg-dev` provides `dpkg-shlibdeps`, which `cargo-deb` uses for `$auto`
+dependency detection.
 
 ## GitHub CI/CD release
 

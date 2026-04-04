@@ -3,6 +3,7 @@ use crate::error::{DaemonError, Result};
 use crate::renderer;
 use crate::state_store::StateStore;
 use chrono::Utc;
+use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::Arc;
@@ -29,13 +30,38 @@ impl ApplyService {
 
         let state = self.store.get_state().await;
         let status = self.store.get_status().await;
-        if status.observed_revision >= state.revision {
+        let runtime_hash = hash_directory(&self.config.runtime_output_dir)?;
+        let runtime_missing = runtime_hash.is_none();
+        let drift_detected = runtime_missing
+            || match (&status.active_config_hash, runtime_hash.as_deref()) {
+                (Some(expected), Some(actual)) => expected != actual,
+                (Some(_), None) => true,
+                (None, Some(_)) => true,
+                _ => false,
+            };
+
+        if status.observed_revision >= state.revision && !drift_detected {
             debug!(
                 desired_revision = status.desired_revision,
                 observed_revision = status.observed_revision,
                 "reconcile skipped (already in sync)"
             );
             return Ok(());
+        }
+
+        if drift_detected {
+            self.store
+                .mark_out_of_sync(if runtime_missing {
+                    "runtime output is missing".to_owned()
+                } else {
+                    "active runtime hash differs from observed hash".to_owned()
+                })
+                .await;
+            warn!(
+                observed_revision = status.observed_revision,
+                desired_revision = status.desired_revision,
+                "drift detected, forcing re-apply"
+            );
         }
 
         self.store.mark_applying().await;
@@ -49,8 +75,12 @@ impl ApplyService {
                 "rendered staging config"
             );
             self.validate(&rendered.staging_conf_path)?;
-            let snapshot_dir = self.backup()?;
-            info!(revision = state.revision, backup_dir = %snapshot_dir.display(), "backup created");
+            let snapshot_archive = self.backup()?;
+            info!(
+                revision = state.revision,
+                backup_archive = %snapshot_archive.display(),
+                "backup created"
+            );
             self.commit_staging()?;
             self.reload()?;
             Ok::<String, DaemonError>(rendered.config_hash)
@@ -79,40 +109,58 @@ impl ApplyService {
         let cmd = self
             .config
             .nginx_test_cmd
-            .replace("{staging_conf}", &staging_conf.to_string_lossy());
+            .replace("{staging_conf}", &staging_conf.to_string_lossy())
+            .replace("{staging_dir}", &self.config.staging_dir.to_string_lossy());
         debug!(command = %cmd, "running nginx config test");
         run_shell(&cmd)
     }
 
     fn backup(&self) -> Result<PathBuf> {
         let snapshot_id = Utc::now().format("%Y%m%d%H%M%S").to_string();
-        let snapshot_dir = self.config.backups_dir.join(snapshot_id);
-        std::fs::create_dir_all(&snapshot_dir)?;
+        std::fs::create_dir_all(&self.config.backups_dir)?;
+        let snapshot_archive = self
+            .config
+            .backups_dir
+            .join(format!("{}.tar.gz", snapshot_id));
+        let cmd = format!(
+            "tar -czf {} {} {}",
+            shell_escape(&snapshot_archive),
+            shell_escape(Path::new("/etc/nginx")),
+            shell_escape(&self.config.state_path)
+        );
+        debug!(command = %cmd, "creating backup snapshot");
+        run_shell(&cmd)?;
 
-        if self.config.state_path.exists() {
-            std::fs::copy(&self.config.state_path, snapshot_dir.join("state.json"))?;
-        }
-
-        if self.config.runtime_output_dir.exists() {
-            copy_dir_recursive(&self.config.runtime_output_dir, &snapshot_dir.join("runtime"))?;
-        }
-
-        Ok(snapshot_dir)
+        Ok(snapshot_archive)
     }
 
     fn commit_staging(&self) -> Result<()> {
-        if self.config.runtime_output_dir.exists() {
-            std::fs::remove_dir_all(&self.config.runtime_output_dir)?;
-        }
-
         if let Some(parent) = self.config.runtime_output_dir.parent() {
             std::fs::create_dir_all(parent)?;
         }
 
-        copy_dir_recursive(&self.config.staging_dir, &self.config.runtime_output_dir)?;
+        let previous_runtime_dir = self.config.runtime_output_dir.with_extension("previous");
+        if previous_runtime_dir.exists() {
+            std::fs::remove_dir_all(&previous_runtime_dir)?;
+        }
+        if self.config.runtime_output_dir.exists() {
+            std::fs::rename(&self.config.runtime_output_dir, &previous_runtime_dir)?;
+        }
+
+        if let Err(err) = std::fs::rename(&self.config.staging_dir, &self.config.runtime_output_dir) {
+            if previous_runtime_dir.exists() {
+                let _ = std::fs::rename(&previous_runtime_dir, &self.config.runtime_output_dir);
+            }
+            return Err(err.into());
+        }
+
+        if previous_runtime_dir.exists() {
+            std::fs::remove_dir_all(&previous_runtime_dir)?;
+        }
+
         info!(
             runtime_dir = %self.config.runtime_output_dir.display(),
-            "staging committed"
+            "staging atomically switched to runtime"
         );
         Ok(())
     }
@@ -128,21 +176,32 @@ impl ApplyService {
     }
 }
 
-fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
-    if !src.exists() {
-        return Ok(());
+fn hash_directory(path: &Path) -> Result<Option<String>> {
+    if !path.exists() {
+        return Ok(None);
     }
 
-    std::fs::create_dir_all(dst)?;
-    for entry in std::fs::read_dir(src)? {
+    let mut files = Vec::new();
+    collect_files(path, &mut files)?;
+    files.sort();
+
+    let mut hasher = Sha256::new();
+    for file in files {
+        hasher.update(file.to_string_lossy().as_bytes());
+        hasher.update(std::fs::read(&file)?);
+    }
+    Ok(Some(hex::encode(hasher.finalize())))
+}
+
+fn collect_files(path: &Path, out: &mut Vec<PathBuf>) -> Result<()> {
+    for entry in std::fs::read_dir(path)? {
         let entry = entry?;
-        let src_path = entry.path();
-        let dst_path = dst.join(entry.file_name());
+        let entry_path = entry.path();
 
         if entry.file_type()?.is_dir() {
-            copy_dir_recursive(&src_path, &dst_path)?;
+            collect_files(&entry_path, out)?;
         } else {
-            std::fs::copy(src_path, dst_path)?;
+            out.push(entry_path);
         }
     }
 
@@ -167,4 +226,9 @@ fn run_shell(command: &str) -> Result<()> {
             command, stderr
         )))
     }
+}
+
+fn shell_escape(path: &Path) -> String {
+    let raw = path.to_string_lossy();
+    format!("'{}'", raw.replace('\'', "'\"'\"'"))
 }

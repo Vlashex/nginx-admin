@@ -127,6 +127,14 @@ impl StateStore {
         status_guard.updated_at = Utc::now();
         warn!("status set to degraded");
     }
+
+    pub async fn mark_out_of_sync(&self, details: String) {
+        let mut status_guard = self.status.write().await;
+        status_guard.sync_state = SyncState::OutOfSync;
+        status_guard.last_error = Some(details);
+        status_guard.updated_at = Utc::now();
+        warn!("status set to out_of_sync");
+    }
 }
 
 async fn write_state_file(path: &Path, state: &ControlPlaneState) -> Result<()> {

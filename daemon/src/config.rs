@@ -5,8 +5,6 @@ use std::time::Duration;
 pub struct DaemonConfig {
     pub unix_socket_path: PathBuf,
     pub socket_group: String,
-    pub nginx_api_conf_path: PathBuf,
-    pub nginx_server_conf_path: PathBuf,
     pub state_path: PathBuf,
     pub backups_dir: PathBuf,
     pub staging_dir: PathBuf,
@@ -21,18 +19,15 @@ impl DaemonConfig {
     pub fn from_env() -> Self {
         let unix_socket_path = PathBuf::from(env("DAEMON_UNIX_SOCKET_PATH", "/run/nginx-admin.sock"));
         let socket_group = env("DAEMON_SOCKET_GROUP", "www-data");
-        let nginx_api_conf_path =
-            PathBuf::from(env("DAEMON_NGINX_API_CONF_PATH", "/etc/nginx/snippets/nginx-admin-location.conf"));
-        let nginx_server_conf_path = PathBuf::from(env(
-            "DAEMON_NGINX_SERVER_CONF_PATH",
-            "/etc/nginx/sites-enabled/default",
-        ));
         let state_path = PathBuf::from(env("DAEMON_STATE_PATH", "/etc/nginx-admin/state.json"));
         let backups_dir = PathBuf::from(env("DAEMON_BACKUPS_DIR", "/var/lib/nginx-admin/backups"));
         let staging_dir = PathBuf::from(env("DAEMON_STAGING_DIR", "/etc/nginx-admin/staging"));
         let runtime_output_dir =
-            PathBuf::from(env("DAEMON_RUNTIME_OUTPUT_DIR", "/etc/nginx-admin/generated/runtime"));
-        let nginx_test_cmd = env("DAEMON_NGINX_TEST_CMD", "nginx -t -c {staging_conf}");
+            PathBuf::from(env("DAEMON_RUNTIME_OUTPUT_DIR", "/etc/nginx-admin/generated"));
+        let nginx_test_cmd = env(
+            "DAEMON_NGINX_TEST_CMD",
+            "nginx -t -p {staging_dir} -c {staging_conf}",
+        );
         let reload_cmd = env("DAEMON_RELOAD_CMD", "nginx -s reload");
         let reconcile_interval = Duration::from_secs(env_u64("DAEMON_RECONCILE_INTERVAL_SECS", 2));
         let dry_run = env_bool("DAEMON_DRY_RUN", false);
@@ -40,8 +35,6 @@ impl DaemonConfig {
         Self {
             unix_socket_path,
             socket_group,
-            nginx_api_conf_path,
-            nginx_server_conf_path,
             state_path,
             backups_dir,
             staging_dir,
