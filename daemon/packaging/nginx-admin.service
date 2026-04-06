@@ -1,4 +1,4 @@
-﻿[Unit]
+[Unit]
 Description=nginx-admin control plane daemon
 After=network-online.target
 Wants=network-online.target
