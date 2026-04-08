@@ -6,8 +6,6 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum DaemonError {
-    #[error("not found: {0}")]
-    NotFound(String),
     #[error("conflict: {0}")]
     Conflict(String),
     #[error("invalid input: {0}")]
@@ -30,7 +28,6 @@ struct ErrorBody {
 impl IntoResponse for DaemonError {
     fn into_response(self) -> Response {
         let status = match self {
-            DaemonError::NotFound(_) => StatusCode::NOT_FOUND,
             DaemonError::Conflict(_) => StatusCode::CONFLICT,
             DaemonError::InvalidInput(_) => StatusCode::BAD_REQUEST,
             DaemonError::PreconditionRequired => StatusCode::PRECONDITION_REQUIRED,
