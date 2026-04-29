@@ -96,6 +96,19 @@ pub struct RuntimeStatus {
     pub updated_at: DateTime<Utc>,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum CommandStatus {
+    Accepted,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CommandAccepted {
+    pub command_id: String,
+    pub status: CommandStatus,
+}
+
 impl Default for RuntimeStatus {
     fn default() -> Self {
         Self {

@@ -1,12 +1,13 @@
 ﻿use crate::apply::ApplyService;
 use crate::error::{DaemonError, Result};
-use crate::model::{ControlPlaneState, RuntimeStatus};
+use crate::model::{CommandAccepted, CommandStatus, ControlPlaneState, RuntimeStatus};
 use crate::state_store::StateStore;
 use axum::extract::State;
 use axum::http::{header::ETAG, HeaderMap, HeaderValue, StatusCode};
 use axum::response::IntoResponse;
-use axum::routing::{get, put};
+use axum::routing::{get, post};
 use axum::{Json, Router};
+use chrono::Utc;
 use std::sync::Arc;
 use tracing::{debug, info};
 
@@ -20,7 +21,7 @@ pub fn build_router(context: AppContext) -> Router {
     Router::new()
         .route("/v1/state", get(get_state).put(put_state))
         .route("/v1/runtime/status", get(get_runtime_status))
-        .route("/v1/reconcile", put(trigger_reconcile))
+        .route("/v1/reconcile", post(trigger_reconcile))
         .route("/healthz", get(healthz))
         .with_state(context)
 }
@@ -68,9 +69,16 @@ async fn get_runtime_status(State(ctx): State<AppContext>) -> Result<Json<Runtim
 }
 
 async fn trigger_reconcile(State(ctx): State<AppContext>) -> Result<impl IntoResponse> {
-    info!("trigger_reconcile request");
+    let command_id = new_command_id("reconcile");
+    info!(command_id = %command_id, "trigger_reconcile request");
     ctx.apply_service.reconcile_once().await?;
-    Ok(StatusCode::ACCEPTED)
+    Ok((
+        StatusCode::ACCEPTED,
+        Json(CommandAccepted {
+            command_id,
+            status: CommandStatus::Accepted,
+        }),
+    ))
 }
 
 async fn healthz() -> StatusCode {
@@ -93,4 +101,8 @@ fn parse_if_match(headers: &HeaderMap) -> Result<u64> {
 fn etag_for_revision(revision: u64) -> Result<HeaderValue> {
     HeaderValue::from_str(&format!("\"{}\"", revision))
         .map_err(|err| DaemonError::Internal(format!("invalid ETag value: {}", err)))
+}
+
+fn new_command_id(prefix: &str) -> String {
+    format!("{}-{}", prefix, Utc::now().timestamp_millis())
 }
