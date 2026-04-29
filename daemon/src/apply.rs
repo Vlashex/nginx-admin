@@ -50,16 +50,16 @@ impl ApplyService {
         }
 
         if drift_detected {
-            self.store
-                .mark_out_of_sync(if runtime_missing {
-                    "runtime output is missing".to_owned()
-                } else {
-                    "active runtime hash differs from observed hash".to_owned()
-                })
-                .await;
+            let reason = drift_reason(
+                &self.config.runtime_output_dir,
+                status.active_config_hash.as_deref(),
+                runtime_hash.as_deref(),
+            );
+            self.store.mark_out_of_sync(reason.clone()).await;
             warn!(
                 observed_revision = status.observed_revision,
                 desired_revision = status.desired_revision,
+                reason = %reason,
                 "drift detected, forcing re-apply"
             );
         }
@@ -191,6 +191,20 @@ fn hash_directory(path: &Path) -> Result<Option<String>> {
         hasher.update(std::fs::read(&file)?);
     }
     Ok(Some(hex::encode(hasher.finalize())))
+}
+
+fn drift_reason(path: &Path, expected_hash: Option<&str>, active_hash: Option<&str>) -> String {
+    match (expected_hash, active_hash) {
+        (_, None) => format!("runtime output is missing: {}", path.display()),
+        (None, Some(actual)) => format!(
+            "runtime output exists but no activeConfigHash has been observed yet: activeConfigHash={}",
+            actual
+        ),
+        (Some(expected), Some(actual)) => format!(
+            "active runtime hash differs from observed hash: expected activeConfigHash={}, actual activeConfigHash={}",
+            expected, actual
+        ),
+    }
 }
 
 fn collect_files(path: &Path, out: &mut Vec<PathBuf>) -> Result<()> {
