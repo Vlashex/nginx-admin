@@ -321,6 +321,7 @@ components:
           enum: [proxy_pass]
         target:
           type: string
+          pattern: "^(https?://[^/@?#]+(:[0-9]+)?(/.*)?|http://unix:.+)$"
 
     StaticAction:
       type: object

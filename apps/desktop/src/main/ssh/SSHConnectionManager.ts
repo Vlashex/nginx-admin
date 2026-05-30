@@ -179,11 +179,10 @@ export class SSHConnectionManager {
     });
   }
 
-  private getConnectionMeta(): { host?: string; port?: number; username?: string; keepaliveInterval?: number; keepaliveCountMax?: number } {
+  private getConnectionMeta(): { host?: string; port?: number; keepaliveInterval?: number; keepaliveCountMax?: number } {
     return {
       host: this.config.host,
       port: this.config.port,
-      username: this.config.username,
       keepaliveInterval: this.options.keepaliveInterval ?? this.config.keepaliveInterval ?? 15_000,
       keepaliveCountMax: this.options.keepaliveCountMax ?? this.config.keepaliveCountMax ?? 3,
     };

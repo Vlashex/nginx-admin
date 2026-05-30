@@ -3,9 +3,16 @@ export const BOOTSTRAP_INSTALL_DAEMON_CHANNEL = "bootstrap:install-daemon";
 export const BOOTSTRAP_GET_CONTEXT_CHANNEL = "bootstrap:get-context";
 
 export interface BootstrapConnectionContext {
+  id: string;
+  name: string;
   host: string;
   port: number;
-  username: string;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  checkedAt?: string;
+  latencyMs?: number;
+  status?: "unknown" | "reachable" | "unreachable";
 }
 
 export interface BootstrapInstallOptions {

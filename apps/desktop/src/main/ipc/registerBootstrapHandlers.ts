@@ -9,6 +9,7 @@ import {
   type BootstrapInstallOptions,
   type BootstrapInstallDaemonResponse,
 } from "@vlashex/transport/contracts/bootstrap";
+import type { HostMetadata } from "../secrets/SecretsRepository.js";
 import { SSHExecutor } from "../ssh/SSHExecutor.js";
 
 interface IpcSuccess<TData> {
@@ -26,6 +27,8 @@ type IpcResult<TData> = IpcSuccess<TData> | IpcFailure;
 const DEFAULT_INSTALL_SCRIPT_URL = process.env.NGINX_ADMIN_INSTALL_SCRIPT_URL ?? "https://repo/install.sh";
 const DEFAULT_SERVICE_NAME = process.env.NGINX_ADMIN_SERVICE_NAME ?? "nginx-admin.service";
 const DEFAULT_HEALTH_COMMAND = process.env.NGINX_ADMIN_HEALTHCHECK_COMMAND ?? "nginx-admin status";
+const SECRET_VALUE_PATTERN =
+  /\b(token|secret|password|passphrase|private(?:Key)?|auth|credential|jwt|session)\b\s*[:=]\s*("[^"]*"|'[^']*'|\S+)/giu;
 
 interface BootstrapInstallRequest {
   options: BootstrapInstallOptions;
@@ -33,15 +36,15 @@ interface BootstrapInstallRequest {
 
 const toIpcError = (error: unknown): IpcFailure["error"] => {
   if (error instanceof RemoteExecutionError) {
-    return { message: error.message, code: error.code };
+    return { message: redactPotentialSecrets(error.message), code: error.code };
   }
   if (error instanceof Error) {
-    return { message: error.message, code: "BOOTSTRAP_FAILED" };
+    return { message: redactPotentialSecrets(error.message), code: "BOOTSTRAP_FAILED" };
   }
   return { message: "Unhandled bootstrap error", code: "BOOTSTRAP_FAILED" };
 };
 
-export const registerBootstrapHandlers = (executor: SSHExecutor): void => {
+export const registerBootstrapHandlers = (executor: SSHExecutor, metadata: HostMetadata): void => {
   ipcMain.handle(
     BOOTSTRAP_GET_CONTEXT_CHANNEL,
     async (event): Promise<IpcResult<BootstrapContextResponse>> => {
@@ -54,9 +57,16 @@ export const registerBootstrapHandlers = (executor: SSHExecutor): void => {
         ok: true,
         data: {
           connection: {
-            host: process.env.SSH_HOST ?? "127.0.0.1",
-            port: Number(process.env.SSH_PORT ?? "22"),
-            username: process.env.SSH_USERNAME ?? process.env.USER ?? process.env.USERNAME ?? "unknown",
+            id: metadata.id,
+            name: metadata.name,
+            host: metadata.host,
+            port: metadata.port,
+            description: metadata.description,
+            createdAt: metadata.createdAt,
+            updatedAt: metadata.updatedAt,
+            checkedAt: metadata.checkedAt,
+            latencyMs: metadata.latencyMs,
+            status: metadata.status,
           },
           defaults: {
             installScriptUrl: DEFAULT_INSTALL_SCRIPT_URL,
@@ -153,6 +163,9 @@ export const registerBootstrapHandlers = (executor: SSHExecutor): void => {
 };
 
 const quoteForShell = (value: string): string => `'${value.replace(/'/g, `'\"'\"'`)}'`;
+
+const redactPotentialSecrets = (value: string): string =>
+  value.replace(SECRET_VALUE_PATTERN, (_match, key: string) => `${key}=[redacted]`);
 
 const isTrustedSender = (frameUrl: string): boolean => {
   if (!frameUrl) {

@@ -2,12 +2,22 @@ import { app, BrowserWindow } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 import { registerBootstrapHandlers } from "./ipc/registerBootstrapHandlers.js";
+import { KeytarSecretsRepository } from "./secrets/KeytarSecretsRepository.js";
+import { type HostMetadata, type HostSecrets, SecretsRepositoryError } from "./secrets/SecretsRepository.js";
+import { runDesktopSecretsMigration } from "./secrets/migrateDesktopSecrets.js";
 import { SSHExecutor } from "./ssh/SSHExecutor.js";
 
 const DEFAULT_WIDTH = 1400;
 const DEFAULT_HEIGHT = 900;
 const SSH_LOG_PREFIX = "[main][ssh]";
 const ENV_LOG_PREFIX = "[main][env]";
+const SECRET_ENV_KEYS = [
+  "SSH_USERNAME",
+  "SSH_PASSWORD",
+  "SSH_PRIVATE_KEY",
+  "SSH_PRIVATE_KEY_PATH",
+  "SSH_PASSPHRASE",
+] as const;
 
 const resolveExistingPath = (candidates: string[]): string => {
   for (const candidate of candidates) {
@@ -45,7 +55,13 @@ const parseEnvValue = (rawValue: string): string => {
   return value;
 };
 
-const loadDesktopEnv = (): void => {
+const clearSecretProcessEnv = (): void => {
+  for (const key of SECRET_ENV_KEYS) {
+    delete process.env[key];
+  }
+};
+
+const loadDesktopEnv = (): string | null => {
   const candidates = Array.from(
     new Set([
       process.env.DESKTOP_ENV_PATH,
@@ -59,7 +75,7 @@ const loadDesktopEnv = (): void => {
   const envPath = candidates.find((candidate) => fs.existsSync(candidate));
   if (!envPath) {
     console.warn(`${ENV_LOG_PREFIX} .env file not found`, { checked: candidates });
-    return;
+    return null;
   }
 
   const content = fs.readFileSync(envPath, "utf8");
@@ -89,50 +105,52 @@ const loadDesktopEnv = (): void => {
     envPath,
     applied,
   });
-};
-
-const resolvePrivateKeyConfig = (): { privateKey: string | Buffer | undefined; source: string } => {
-  const explicitPath = process.env.SSH_PRIVATE_KEY_PATH;
-  if (explicitPath) {
-    if (!fs.existsSync(explicitPath)) {
-      throw new Error(`SSH private key file was not found: ${explicitPath}`);
-    }
-    return { privateKey: fs.readFileSync(explicitPath), source: `file:${explicitPath}` };
-  }
-
-  const legacyValue = process.env.SSH_PRIVATE_KEY;
-  if (!legacyValue) {
-    return { privateKey: undefined, source: "none" };
-  }
-
-  if (fs.existsSync(legacyValue)) {
-    return { privateKey: fs.readFileSync(legacyValue), source: `file:${legacyValue}` };
-  }
-
-  return { privateKey: legacyValue, source: "inline" };
+  return envPath;
 };
 
 interface SshRuntime {
   executor: SSHExecutor;
   hasAuth: boolean;
+  metadata: HostMetadata;
 }
 
-const createSshRuntime = (): SshRuntime => {
+const createSshRuntime = async (secretsRepository: KeytarSecretsRepository, envPath: string | null): Promise<SshRuntime> => {
   const host = process.env.SSH_HOST ?? "127.0.0.1";
-  const username = process.env.SSH_USERNAME ?? process.env.USER ?? process.env.USERNAME ?? "";
-  if (!username) {
-    throw new Error("SSH username is required. Set SSH_USERNAME.");
-  }
   const port = parsePort(process.env.SSH_PORT, 22);
-  const { privateKey, source: privateKeySource } = resolvePrivateKeyConfig();
-  const usesPassword = Boolean(process.env.SSH_PASSWORD);
-  const usesPrivateKey = Boolean(privateKey);
+  let secrets: HostSecrets | null = null;
+  try {
+    const migration = await runDesktopSecretsMigration(secretsRepository, envPath, "default");
+    secrets = migration.secrets;
+    if (migration.migrated) {
+      console.info(`${SSH_LOG_PREFIX} Migrated SSH credentials to secure storage`, {
+        hostId: migration.hostId,
+        cleanedEnvFile: migration.cleanedEnvFile,
+      });
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const code = error instanceof SecretsRepositoryError ? error.code : "MIGRATION_FAILED";
+    console.error(`${SSH_LOG_PREFIX} Secure credential migration failed`, { code, message });
+    clearSecretProcessEnv();
+  }
 
-  console.info(`${SSH_LOG_PREFIX} SSH executor init`, {
+  const username = secrets?.username ?? process.env.USER ?? process.env.USERNAME ?? "unknown";
+  const privateKey = secrets?.privateKey;
+  const usesPassword = Boolean(secrets?.password);
+  const usesPrivateKey = Boolean(privateKey);
+  const metadata: HostMetadata = {
+    id: "default",
+    name: process.env.SSH_HOST_NAME ?? host,
     host,
     port,
-    username,
-    privateKeySource,
+    description: process.env.SSH_HOST_DESCRIPTION,
+    status: "unknown",
+  };
+
+  console.info(`${SSH_LOG_PREFIX} SSH executor init`, {
+    hostId: metadata.id,
+    host: metadata.host,
+    port: metadata.port,
     usesPassword,
     usesPrivateKey,
     cliPath: process.env.NGINX_ADMIN_CLI_PATH ?? "/usr/local/bin/nginx-admin-cli",
@@ -148,9 +166,9 @@ const createSshRuntime = (): SshRuntime => {
         host,
         username,
         port,
-        password: process.env.SSH_PASSWORD,
+        password: secrets?.password,
         privateKey,
-        passphrase: process.env.SSH_PASSPHRASE,
+        passphrase: secrets?.passphrase,
         cliPath: process.env.NGINX_ADMIN_CLI_PATH ?? "/usr/local/bin/nginx-admin-cli",
       },
       {
@@ -161,6 +179,7 @@ const createSshRuntime = (): SshRuntime => {
       }
     ),
     hasAuth: usesPassword || usesPrivateKey,
+    metadata,
   };
 };
 
@@ -205,14 +224,18 @@ const createWindow = async (): Promise<BrowserWindow> => {
 };
 
 let mainWindow: BrowserWindow | null = null;
-loadDesktopEnv();
-const sshRuntime = createSshRuntime();
-const sshExecutor = sshRuntime.executor;
+const envPath = loadDesktopEnv();
+const secretsRepository = new KeytarSecretsRepository();
+let sshRuntime: SshRuntime | null = null;
 
 app.whenReady().then(async () => {
-  registerBootstrapHandlers(sshExecutor);
+  sshRuntime = await createSshRuntime(secretsRepository, envPath);
+  const sshExecutor = sshRuntime.executor;
+  registerBootstrapHandlers(sshExecutor, sshRuntime.metadata);
   mainWindow = await createWindow();
-  mainWindow.webContents.openDevTools();
+  if (!app.isPackaged && process.env.ELECTRON_OPEN_DEVTOOLS === "1") {
+    mainWindow.webContents.openDevTools();
+  }
 
   if (!sshRuntime.hasAuth) {
     console.warn(`${SSH_LOG_PREFIX} Startup SSH health check skipped: no SSH auth configured`);
@@ -240,5 +263,5 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", () => {
-  void sshExecutor.shutdown();
+  void sshRuntime?.executor.shutdown();
 });

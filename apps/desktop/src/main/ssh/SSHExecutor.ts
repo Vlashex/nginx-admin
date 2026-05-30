@@ -16,6 +16,8 @@ export interface SSHExecutorOptions extends SSHConnectionManagerOptions {
 type RouteCommand = keyof RouteCommandMap & string;
 const CONNECT_FAILED_CODE = "SSH_CONNECT_FAILED";
 const ABORTED_CODE = "ABORTED";
+const SECRET_VALUE_PATTERN =
+  /\b(token|secret|password|passphrase|private(?:Key)?|auth|credential|jwt|session)\b\s*[:=]\s*("[^"]*"|'[^']*'|\S+)/giu;
 
 export class SSHExecutor implements RemoteExecutor<RouteCommandMap> {
   private readonly connectionManager: SSHConnectionManager;
@@ -202,12 +204,12 @@ export class SSHExecutor implements RemoteExecutor<RouteCommandMap> {
             const parsedError = this.parseRemoteError(stderr);
             this.log("error", "SSH command exited with non-zero code", {
               code,
-              stderr: stderr.trim(),
+              stderrLength: stderr.trim().length,
             });
             rejectOnce(
               parsedError
                 ? new RemoteExecutionError(parsedError.message, parsedError.code)
-                : new RemoteExecutionError(stderr || `SSH exited with code ${code}`, "SSH_NON_ZERO")
+                : new RemoteExecutionError(redactPotentialSecrets(stderr) || `SSH exited with code ${code}`, "SSH_NON_ZERO")
             );
             return;
           }
@@ -283,3 +285,6 @@ export class SSHExecutor implements RemoteExecutor<RouteCommandMap> {
     console[level](`${this.logPrefix} ${message}`, meta);
   }
 }
+
+const redactPotentialSecrets = (value: string): string =>
+  value.replace(SECRET_VALUE_PATTERN, (_match, key: string) => `${key}=[redacted]`);

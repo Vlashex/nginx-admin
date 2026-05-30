@@ -1,4 +1,5 @@
 import type { Route, RouteRepository } from "@vlashex/core";
+import { stringifyWithoutSecrets } from "./safeJson";
 
 type PersistedRoute = Omit<Route, "metadata"> & {
   metadata?: Route["metadata"] extends infer TMetadata
@@ -42,7 +43,7 @@ export class BrowserLocalStorageRouteRepository implements RouteRepository {
     const all = await this.findAll();
     const map = new Map(all.map((item) => [item.id, item]));
     map.set(route.id, route);
-    const serialized = JSON.stringify(Array.from(map.values()).map(toPersistedRoute));
+    const serialized = stringifyWithoutSecrets(Array.from(map.values()).map(toPersistedRoute));
     localStorage.setItem(this.key, serialized);
   }
 
@@ -68,11 +69,11 @@ export class BrowserLocalStorageRouteRepository implements RouteRepository {
   async delete(id: string): Promise<void> {
     const routes = await this.findAll();
     const remaining = routes.filter((route) => route.id !== id);
-    localStorage.setItem(this.key, JSON.stringify(remaining.map(toPersistedRoute)));
+    localStorage.setItem(this.key, stringifyWithoutSecrets(remaining.map(toPersistedRoute)));
   }
 
   async saveAll(routes: Map<string, Route>): Promise<void> {
-    const serialized = JSON.stringify(Array.from(routes.values()).map(toPersistedRoute));
+    const serialized = stringifyWithoutSecrets(Array.from(routes.values()).map(toPersistedRoute));
     localStorage.setItem(this.key, serialized);
   }
 

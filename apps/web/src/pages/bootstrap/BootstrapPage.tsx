@@ -109,9 +109,10 @@ export default function BootstrapPage() {
         <h2 className="text-lg font-semibold">Connection</h2>
         {context && (
           <div className="mt-3 grid gap-2 text-sm text-gray-300">
+            <div>Name: {context.connection.name}</div>
             <div>Host: {context.connection.host}</div>
             <div>Port: {context.connection.port}</div>
-            <div>User: {context.connection.username}</div>
+            <div>Status: {context.connection.status ?? "unknown"}</div>
           </div>
         )}
         {!context && <div className="mt-3 text-sm text-gray-400">Loading connection context...</div>}

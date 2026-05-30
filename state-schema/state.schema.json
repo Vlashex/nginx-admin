@@ -76,7 +76,10 @@
         "extraDirectives": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "string",
+            "not": {
+              "pattern": "([Aa][Uu][Tt][Hh][Oo][Rr][Ii][Zz][Aa][Tt][Ii][Oo][Nn]|[Cc][Oo][Oo][Kk][Ii][Ee]|[Tt][Oo][Kk][Ee][Nn]|[Ss][Ee][Cc][Rr][Ee][Tt]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll]|[Jj][Ww][Tt]|[Ss][Ee][Ss][Ss][Ii][Oo][Nn])"
+            }
           }
         },
         "enabled": {
@@ -187,7 +190,7 @@
             },
             "target": {
               "type": "string",
-              "pattern": "^(https?://|http://unix:).+"
+              "pattern": "^(https?://[^/@?#]+(:[0-9]+)?(/.*)?|http://unix:.+)$"
             }
           }
         },
@@ -249,7 +252,10 @@
       "properties": {
         "name": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "not": {
+            "pattern": "([Tt][Oo][Kk][Ee][Nn]|[Ss][Ee][Cc][Rr][Ee][Tt]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Pp][Aa][Ss][Ss][Pp][Hh][Rr][Aa][Ss][Ee]|[Pp][Rr][Ii][Vv][Aa][Tt][Ee]|[Aa][Uu][Tt][Hh]|[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll]|[Kk][Ee][Yy]|[Jj][Ww][Tt]|[Ss][Ee][Ss][Ss][Ii][Oo][Nn]|[Cc][Oo][Oo][Kk][Ii][Ee])"
+          }
         },
         "value": {
           "type": "string"

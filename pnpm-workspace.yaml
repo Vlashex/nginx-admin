@@ -7,4 +7,5 @@ onlyBuiltDependencies:
   - cpu-features
   - electron
   - esbuild
+  - keytar
   - ssh2

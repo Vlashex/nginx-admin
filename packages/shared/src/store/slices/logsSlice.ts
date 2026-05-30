@@ -20,6 +20,28 @@ interface LogsActions {
   stopLive: () => void;
 }
 
+const SENSITIVE_KEY_PATTERN = /(token|secret|password|passphrase|private|auth|credential|key|jwt|session)/iu;
+
+const sanitizeLogContext = (
+  context: LogEntry["context"] | undefined
+): LogEntry["context"] | undefined => {
+  if (!context) {
+    return undefined;
+  }
+
+  return Object.fromEntries(
+    Object.entries(context).map(([key, value]) => [
+      key,
+      SENSITIVE_KEY_PATTERN.test(key) ? "[redacted]" : value,
+    ])
+  );
+};
+
+const sanitizeLog = (log: Omit<LogEntry, "id">): Omit<LogEntry, "id"> => ({
+  ...log,
+  context: sanitizeLogContext(log.context),
+});
+
 export const useLogsStore = create<LogsState & LogsActions>()(
   devtools(
     (set) => ({
@@ -36,7 +58,7 @@ export const useLogsStore = create<LogsState & LogsActions>()(
 
       addLog: (log) =>
         set((state) => ({
-          logs: [...state.logs, LogUseCases.createLogEntry(log)],
+          logs: [...state.logs, LogUseCases.createLogEntry(sanitizeLog(log))],
         })),
 
       clearLogs: () => set({ logs: [] }),
@@ -51,7 +73,10 @@ export const useLogsStore = create<LogsState & LogsActions>()(
         try {
           const savedLogs = localStorage.getItem("nginx_logs");
           if (savedLogs) {
-            const logs: LogEntry[] = JSON.parse(savedLogs);
+            const logs: LogEntry[] = JSON.parse(savedLogs).map((log: LogEntry) => ({
+              ...log,
+              context: sanitizeLogContext(log.context),
+            }));
             set({ logs, isLoading: false });
           }
         } catch {

@@ -1,14 +1,13 @@
 import type { Route } from "@vlashex/core/domain/Route";
 import type { RouteCommandMap } from "@vlashex/transport/contracts/routeCommands";
-import type { RemoteExecuteOptions, RemoteExecutor } from "@vlashex/transport/RemoteExecutor";
+import type { RemoteExecutor } from "@vlashex/transport/RemoteExecutor";
 
 export class MockExecutor implements RemoteExecutor<RouteCommandMap> {
   private routes: Route[] = [];
 
   async execute<TKey extends keyof RouteCommandMap & string>(
     command: TKey,
-    payload: RouteCommandMap[TKey]["req"],
-    _options?: RemoteExecuteOptions
+    payload: RouteCommandMap[TKey]["req"]
   ): Promise<RouteCommandMap[TKey]["res"]> {
     switch (command) {
       case "routes:list": {

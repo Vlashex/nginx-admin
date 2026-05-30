@@ -163,6 +163,17 @@ fn validate_state(state: &ControlPlaneState) -> Result<()> {
         }
 
         let mut route_path_set = HashSet::new();
+        if let Some(extra_directives) = &server.extra_directives {
+            for directive in extra_directives {
+                if contains_sensitive_directive(directive) {
+                    return Err(DaemonError::InvalidInput(format!(
+                        "sensitive directives must not be stored in state.json for server {}",
+                        server.id
+                    )));
+                }
+            }
+        }
+
         for route in &server.routes {
             if !route.path.starts_with('/') {
                 return Err(DaemonError::InvalidInput(format!(
@@ -176,7 +187,71 @@ fn validate_state(state: &ControlPlaneState) -> Result<()> {
                     server.id, route.path
                 )));
             }
+
+            if let Some(headers) = &route.headers {
+                for header in headers {
+                    if is_sensitive_name(&header.name) {
+                        return Err(DaemonError::InvalidInput(format!(
+                            "sensitive header values must not be stored in state.json: {}",
+                            header.name
+                        )));
+                    }
+                }
+            }
+
+            if let crate::model::RouteAction::ProxyPass { target } = &route.action {
+                if target_contains_credentials(target) {
+                    return Err(DaemonError::InvalidInput(format!(
+                        "proxy target must not contain embedded credentials in server {} route {}",
+                        server.id, route.id
+                    )));
+                }
+            }
         }
     }
     Ok(())
+}
+
+fn is_sensitive_name(value: &str) -> bool {
+    let normalized = value.to_ascii_lowercase();
+    [
+        "token",
+        "secret",
+        "password",
+        "passphrase",
+        "private",
+        "auth",
+        "credential",
+        "key",
+        "jwt",
+        "session",
+        "cookie",
+    ]
+    .iter()
+    .any(|needle| normalized.contains(needle))
+}
+
+fn target_contains_credentials(target: &str) -> bool {
+    let Some(scheme_index) = target.find("://") else {
+        return false;
+    };
+    let authority_start = scheme_index + 3;
+    let authority_end = target[authority_start..]
+        .find(['/', '?', '#'])
+        .map(|offset| authority_start + offset)
+        .unwrap_or(target.len());
+    target[authority_start..authority_end].contains('@')
+}
+
+fn contains_sensitive_directive(value: &str) -> bool {
+    let normalized = value.to_ascii_lowercase();
+    normalized.contains("authorization")
+        || normalized.contains("cookie")
+        || normalized.contains("proxy_set_header auth")
+        || normalized.contains("password")
+        || normalized.contains("token")
+        || normalized.contains("secret")
+        || normalized.contains("credential")
+        || normalized.contains("jwt")
+        || normalized.contains("session")
 }

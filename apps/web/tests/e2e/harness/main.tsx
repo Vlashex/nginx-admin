@@ -6,6 +6,7 @@ import {
   useRouteFormStore,
 } from "@vlashex/shared/store";
 import { generateConfigPreview } from "@vlashex/core";
+import "../../../src/processes/integrations/storeIntegrations";
 
 // Expose core API early at module scope so it's available before React renders
 // @ts-expect-error test harness global

@@ -6,7 +6,7 @@ export default defineConfig([
     format: ["cjs"],
     platform: "node",
     outDir: "dist/main",
-    external: ["electron"],
+    external: ["electron", "keytar"],
   },
   {
     entry: ["src/preload/remoteBridge.ts"],

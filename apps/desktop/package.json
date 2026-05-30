@@ -5,6 +5,8 @@
   "main": "dist/main/main.js",
   "scripts": {
     "build": "tsup",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
     "start": "pnpm build && electron .",
     "clean:src": "rimraf --glob \"src/**/*.js\" \"src/**/*.d.ts\" \"src/**/*.d.ts.map\" \"src/**/*.js.map\""
   },
@@ -13,6 +15,7 @@
     "@vlashex/core": "workspace:*",
     "@vlashex/infra": "workspace:*",
     "@vlashex/transport": "workspace:*",
+    "keytar": "^7.9.0",
     "rimraf": "^6.1.2",
     "ssh2": "^1.15.0",
     "zustand": "^5.0.8"
