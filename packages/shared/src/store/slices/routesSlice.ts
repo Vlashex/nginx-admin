@@ -7,6 +7,10 @@ import {
   toggleRouteStatus,
   LocalStorageRouteRepository,
 } from "@vlashex/core";
+import {
+  redactPotentialSecrets,
+  sanitizeForJson,
+} from "@vlashex/core/security/secrets";
 import type { RouteRepository } from "@vlashex/core";
 import type { Route } from "@vlashex/core";
 
@@ -33,6 +37,14 @@ interface RoutesActions {
 type RoutesStore = RoutesState & RoutesActions;
 
 export const createRoutesStore = (repository: RouteRepository) => {
+  const sanitizeRoutesMap = (routes: Map<string, Route>): Map<string, Route> =>
+    new Map(
+      Array.from(routes.entries()).map(([id, route]) => [
+        id,
+        sanitizeForJson(route) as Route,
+      ])
+    );
+
   return create<RoutesStore>()(
     devtools(
       (set, get) => ({
@@ -45,7 +57,7 @@ export const createRoutesStore = (repository: RouteRepository) => {
           try {
             return await createRoute(repository, routeData);
           } catch (error) {
-            set({ error: (error as Error).message });
+            set({ error: redactPotentialSecrets((error as Error).message) });
             throw error;
           }
         },
@@ -54,7 +66,7 @@ export const createRoutesStore = (repository: RouteRepository) => {
           try {
             await updateRoute(repository, id, updates);
           } catch (error) {
-            set({ error: (error as Error).message });
+            set({ error: redactPotentialSecrets((error as Error).message) });
             throw error;
           }
         },
@@ -67,7 +79,7 @@ export const createRoutesStore = (repository: RouteRepository) => {
                 state.currentRouteId === id ? null : state.currentRouteId,
             }));
           } catch (error) {
-            set({ error: (error as Error).message });
+            set({ error: redactPotentialSecrets((error as Error).message) });
             throw error;
           }
         },
@@ -76,7 +88,7 @@ export const createRoutesStore = (repository: RouteRepository) => {
           try {
             await toggleRouteStatus(repository, id);
           } catch (error) {
-            set({ error: (error as Error).message });
+            set({ error: redactPotentialSecrets((error as Error).message) });
             throw error;
           }
         },
@@ -87,9 +99,12 @@ export const createRoutesStore = (repository: RouteRepository) => {
           set({ isLoading: true, error: null });
           try {
             const routes = await repository.loadAll();
-            set({ routes, isLoading: false });
+            set({ routes: sanitizeRoutesMap(routes), isLoading: false });
           } catch (error) {
-            set({ error: (error as Error).message, isLoading: false });
+            set({
+              error: redactPotentialSecrets((error as Error).message),
+              isLoading: false,
+            });
           }
         },
 
@@ -98,7 +113,7 @@ export const createRoutesStore = (repository: RouteRepository) => {
             await repository.saveAll(get().routes);
             return true;
           } catch (error) {
-            set({ error: (error as Error).message });
+            set({ error: redactPotentialSecrets((error as Error).message) });
             return false;
           }
         },

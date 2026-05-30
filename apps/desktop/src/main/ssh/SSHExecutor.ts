@@ -1,4 +1,8 @@
 import type { Client, ClientChannel, ConnectConfig } from "ssh2";
+import {
+  redactPotentialSecrets,
+  sanitizeForJson,
+} from "@vlashex/core/security/secrets";
 import type { RouteCommandMap } from "@vlashex/transport/contracts/routeCommands";
 import type { RemoteExecuteOptions, RemoteExecutor } from "@vlashex/transport/RemoteExecutor";
 import { RemoteExecutionError } from "@vlashex/transport/RemoteExecutor";
@@ -16,8 +20,6 @@ export interface SSHExecutorOptions extends SSHConnectionManagerOptions {
 type RouteCommand = keyof RouteCommandMap & string;
 const CONNECT_FAILED_CODE = "SSH_CONNECT_FAILED";
 const ABORTED_CODE = "ABORTED";
-const SECRET_VALUE_PATTERN =
-  /\b(token|secret|password|passphrase|private(?:Key)?|auth|credential|jwt|session)\b\s*[:=]\s*("[^"]*"|'[^']*'|\S+)/giu;
 
 export class SSHExecutor implements RemoteExecutor<RouteCommandMap> {
   private readonly connectionManager: SSHConnectionManager;
@@ -96,7 +98,7 @@ export class SSHExecutor implements RemoteExecutor<RouteCommandMap> {
           command: commandName,
           attempt,
           totalAttempts,
-          error: error instanceof Error ? error.message : String(error),
+          error: redactPotentialSecrets(error instanceof Error ? error.message : String(error)),
         });
         lastError = error;
         if (!this.shouldRetry(error, attempt, totalAttempts)) {
@@ -183,7 +185,7 @@ export class SSHExecutor implements RemoteExecutor<RouteCommandMap> {
       client.exec(command, (execErr: Error | undefined, stream: ClientChannel) => {
         if (execErr) {
           this.log("error", "Failed to open SSH exec channel", { message: execErr.message });
-          rejectOnce(new RemoteExecutionError(execErr.message, "SSH_EXEC_OPEN_FAILED"));
+          rejectOnce(new RemoteExecutionError(redactPotentialSecrets(execErr.message), "SSH_EXEC_OPEN_FAILED"));
           return;
         }
 
@@ -237,7 +239,7 @@ export class SSHExecutor implements RemoteExecutor<RouteCommandMap> {
         typeof parsed.message === "string" &&
         typeof parsed.code === "string"
       ) {
-        return { message: parsed.message, code: parsed.code };
+        return { message: redactPotentialSecrets(parsed.message), code: parsed.code };
       }
     } catch {
       return null;
@@ -282,9 +284,6 @@ export class SSHExecutor implements RemoteExecutor<RouteCommandMap> {
       return;
     }
 
-    console[level](`${this.logPrefix} ${message}`, meta);
+    console[level](`${this.logPrefix} ${message}`, sanitizeForJson(meta));
   }
 }
-
-const redactPotentialSecrets = (value: string): string =>
-  value.replace(SECRET_VALUE_PATTERN, (_match, key: string) => `${key}=[redacted]`);

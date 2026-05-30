@@ -230,14 +230,16 @@ fn run_shell(command: &str) -> Result<()> {
     let output = Command::new("sh").arg("-c").arg(command).output()?;
 
     if output.status.success() {
-        debug!(command, "command succeeded");
+        debug!(command = %redact_potential_secrets(command), "command succeeded");
         Ok(())
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr).trim().to_owned();
-        warn!(command, stderr = %stderr, "command failed");
+        let safe_command = redact_potential_secrets(command);
+        let safe_stderr = redact_potential_secrets(&stderr);
+        warn!(command = %safe_command, stderr = %safe_stderr, "command failed");
         Err(DaemonError::Internal(format!(
             "command failed [{}]: {}",
-            command, stderr
+            safe_command, safe_stderr
         )))
     }
 }
@@ -245,4 +247,46 @@ fn run_shell(command: &str) -> Result<()> {
 fn shell_escape(path: &Path) -> String {
     let raw = path.to_string_lossy();
     format!("'{}'", raw.replace('\'', "'\"'\"'"))
+}
+
+fn redact_potential_secrets(value: &str) -> String {
+    let mut redact_next = false;
+    let mut parts = Vec::new();
+
+    for part in value.split_whitespace() {
+        let normalized = part.to_ascii_lowercase();
+        if redact_next || contains_sensitive_assignment(&normalized) {
+            parts.push("[redacted]");
+            redact_next = false;
+            continue;
+        }
+
+        if normalized == "bearer" || normalized.ends_with("bearer") {
+            parts.push("[redacted]");
+            redact_next = true;
+            continue;
+        }
+
+        parts.push(part);
+    }
+
+    parts.join(" ")
+}
+
+fn contains_sensitive_assignment(value: &str) -> bool {
+    let sensitive = [
+        "authorization",
+        "cookie",
+        "token",
+        "secret",
+        "password",
+        "passphrase",
+        "credential",
+        "jwt",
+        "session",
+        "apikey",
+        "api_key",
+    ];
+    (value.contains('=') || value.contains(':'))
+        && sensitive.iter().any(|needle| value.contains(needle))
 }

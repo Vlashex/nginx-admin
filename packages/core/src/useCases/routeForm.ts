@@ -1,5 +1,6 @@
 // core/useCases/routeForm.ts
 import type { Route, LocationConfig, URLPath } from "../entities/types";
+import { LocationConfigSchema } from "../entities/types";
 import {
   validateDomain,
   validatePort,
@@ -34,6 +35,14 @@ export const validateLocation = (
 
   if (!location.path || !validateURLPath(location.path)) {
     errors.path = "Invalid URL path format";
+  }
+
+  const parsed = LocationConfigSchema.safeParse(location);
+  if (!parsed.success) {
+    for (const issue of parsed.error.issues) {
+      const key = issue.path.join(".") || "location";
+      errors[key] = issue.message;
+    }
   }
 
   return errors;

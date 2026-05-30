@@ -1,4 +1,5 @@
 import type { LocationConfig } from "@vlashex/core";
+import { sanitizeForJson } from "@vlashex/core/security/secrets";
 import { create } from "zustand";
 
 type FormMode = "create" | "edit";
@@ -37,5 +38,10 @@ export const useRouteFormModalStore = create<Store>()((set) => ({
     set({ modalOpen: false, locationEditing: { index: null, value: null } }),
   setActiveTab: (tab) => set({ activeTab: tab }),
   startEditLocation: (index, value) =>
-    set({ locationEditing: { index, value } }),
+    set({
+      locationEditing: {
+        index,
+        value: sanitizeForJson(value) as LocationConfig | null,
+      },
+    }),
 }));

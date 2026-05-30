@@ -190,7 +190,7 @@ fn validate_state(state: &ControlPlaneState) -> Result<()> {
 
             if let Some(headers) = &route.headers {
                 for header in headers {
-                    if is_sensitive_name(&header.name) {
+                    if is_sensitive_name(&header.name) || contains_sensitive_directive(&header.value) {
                         return Err(DaemonError::InvalidInput(format!(
                             "sensitive header values must not be stored in state.json: {}",
                             header.name
@@ -199,13 +199,24 @@ fn validate_state(state: &ControlPlaneState) -> Result<()> {
                 }
             }
 
-            if let crate::model::RouteAction::ProxyPass { target } = &route.action {
-                if target_contains_credentials(target) {
-                    return Err(DaemonError::InvalidInput(format!(
-                        "proxy target must not contain embedded credentials in server {} route {}",
-                        server.id, route.id
-                    )));
+            match &route.action {
+                crate::model::RouteAction::ProxyPass { target } => {
+                    if target_contains_credentials(target) || contains_sensitive_directive(target) {
+                        return Err(DaemonError::InvalidInput(format!(
+                            "proxy target must not contain credentials in server {} route {}",
+                            server.id, route.id
+                        )));
+                    }
                 }
+                crate::model::RouteAction::Redirect { url, .. } => {
+                    if target_contains_credentials(url) || contains_sensitive_directive(url) {
+                        return Err(DaemonError::InvalidInput(format!(
+                            "redirect url must not contain credentials in server {} route {}",
+                            server.id, route.id
+                        )));
+                    }
+                }
+                crate::model::RouteAction::Static { .. } => {}
             }
         }
     }

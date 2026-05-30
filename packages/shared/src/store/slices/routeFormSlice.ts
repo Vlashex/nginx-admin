@@ -6,6 +6,7 @@ import {
   //   validateLocation,
   createLocation,
 } from "@vlashex/core";
+import { sanitizeForJson } from "@vlashex/core/security/secrets";
 import type {
   Route,
   LocationConfig,
@@ -83,7 +84,10 @@ export const useRouteFormStore = create<RouteFormState & RouteFormActions>()(
 
       setField: (field, value) =>
         set((state) => ({
-          formData: { ...state.formData, [field]: value },
+          formData: sanitizeForJson({
+            ...state.formData,
+            [field]: value,
+          }) as Partial<Route>,
           validationErrors: { ...state.validationErrors, [field]: "" },
         })),
 
@@ -91,16 +95,19 @@ export const useRouteFormStore = create<RouteFormState & RouteFormActions>()(
         set((state) => ({
           formData: {
             ...state.formData,
-            advanced: {
+            advanced: sanitizeForJson({
               ...state.formData.advanced,
               [field]: value,
-            } as Route["advanced"],
+            }) as Route["advanced"],
           },
         })),
 
       setLocationField: (field, value) =>
         set((state) => ({
-          locationFormData: { ...state.locationFormData, [field]: value },
+          locationFormData: sanitizeForJson({
+            ...state.locationFormData,
+            [field]: value,
+          }) as Partial<LocationConfig>,
         })),
 
       openLocationModal: (index) =>
@@ -109,7 +116,9 @@ export const useRouteFormStore = create<RouteFormState & RouteFormActions>()(
           editingLocationIndex: index ?? null,
           locationFormData:
             index !== undefined && state.formData.locations?.[index]
-              ? { ...state.formData.locations[index] }
+              ? (sanitizeForJson({
+                  ...state.formData.locations[index],
+                }) as Partial<LocationConfig>)
               : { ...initialLocationForm },
         })),
 
@@ -126,10 +135,10 @@ export const useRouteFormStore = create<RouteFormState & RouteFormActions>()(
           const newLocation = createLocation(state.locationFormData);
 
           return {
-            formData: {
+            formData: sanitizeForJson({
               ...state.formData,
               locations: [...locations, newLocation],
-            },
+            }) as Partial<Route>,
             isLocationModalOpen: false,
             locationFormData: { ...initialLocationForm },
           };
@@ -150,7 +159,10 @@ export const useRouteFormStore = create<RouteFormState & RouteFormActions>()(
           }
 
           return {
-            formData: { ...state.formData, locations },
+            formData: sanitizeForJson({
+              ...state.formData,
+              locations,
+            }) as Partial<Route>,
             isLocationModalOpen: false,
             editingLocationIndex: null,
             locationFormData: { ...initialLocationForm },
@@ -164,7 +176,10 @@ export const useRouteFormStore = create<RouteFormState & RouteFormActions>()(
             : [];
           locations.splice(index, 1);
           return {
-            formData: { ...state.formData, locations },
+            formData: sanitizeForJson({
+              ...state.formData,
+              locations,
+            }) as Partial<Route>,
           };
         }),
 
@@ -177,7 +192,7 @@ export const useRouteFormStore = create<RouteFormState & RouteFormActions>()(
 
       setFormData: (route) =>
         set({
-          formData: route,
+          formData: sanitizeForJson(route) as Partial<Route>,
           isEditing: !!route.id,
           validationErrors: {},
         }),

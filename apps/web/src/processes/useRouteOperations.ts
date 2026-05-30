@@ -6,6 +6,7 @@ import {
   updateRoute,
   toggleRouteStatus,
 } from "@vlashex/core";
+import { redactPotentialSecrets } from "@vlashex/core/security/secrets";
 import type { Route } from "@vlashex/core";
 
 export function useRouteOperations() {
@@ -28,7 +29,7 @@ export function useRouteOperations() {
         setSuccess(successMessage);
         return res;
       } catch (e) {
-        setError((e as Error).message);
+        setError(redactPotentialSecrets((e as Error).message));
         return null;
       } finally {
         setLoading(false);

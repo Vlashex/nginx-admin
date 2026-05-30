@@ -1,12 +1,9 @@
 import type { Route } from "@vlashex/core/domain/Route";
+import { stringifyWithoutSecrets } from "@vlashex/core/security/secrets";
 import type { RouteCommandMap } from "@vlashex/transport/contracts/routeCommands";
 import type { RemoteExecuteOptions, RemoteExecutor } from "@vlashex/transport/RemoteExecutor";
 
 const ROUTES_STORAGE_KEY = "nginx_desktop_routes";
-const SENSITIVE_KEY_PATTERN = /(token|secret|password|passphrase|private|auth|credential|key|jwt|session)/iu;
-const NON_SECRET_PATH_KEYS = new Set(["ssl_certificate_key", "certificateKey", "certificate_key"]);
-const isSensitiveFieldName = (key: string): boolean =>
-  SENSITIVE_KEY_PATTERN.test(key) && !NON_SECRET_PATH_KEYS.has(key);
 
 export class LocalRouteExecutor implements RemoteExecutor<RouteCommandMap> {
   async execute<TKey extends keyof RouteCommandMap & string>(
@@ -74,22 +71,6 @@ export class LocalRouteExecutor implements RemoteExecutor<RouteCommandMap> {
     if (typeof window === "undefined") {
       return;
     }
-    window.localStorage.setItem(ROUTES_STORAGE_KEY, JSON.stringify(sanitizeForJson(routes)));
+    window.localStorage.setItem(ROUTES_STORAGE_KEY, stringifyWithoutSecrets(routes));
   }
 }
-
-const sanitizeForJson = (value: unknown): unknown => {
-  if (Array.isArray(value)) {
-    return value.map(sanitizeForJson);
-  }
-
-  if (typeof value !== "object" || value === null) {
-    return value;
-  }
-
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>)
-      .filter(([key]) => !isSensitiveFieldName(key))
-      .map(([key, item]) => [key, sanitizeForJson(item)])
-  );
-};

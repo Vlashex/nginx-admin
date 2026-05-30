@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  containsSecretLikeValue,
+  containsSensitiveDirective,
+} from "../security/secrets";
 
 /* ──────────── Branded primitives ──────────── */
 
@@ -49,6 +53,9 @@ export const ProxyTargetSchema = z
     /^(https?:\/\/)?([a-zA-Z0-9.-]+)(:\d+)?(\/.*)?$/,
     "Invalid proxy target (must be domain or URL)"
   )
+  .refine((value) => !containsSecretLikeValue(value), {
+    message: "Proxy target must not contain embedded credentials",
+  })
   .optional();
 
 /**
@@ -70,6 +77,14 @@ export const LocationConfigSchema = z
         code: z.ZodIssueCode.custom,
         message: "proxy_pass и try_files не должны использоваться вместе",
         path: ["try_files"],
+      });
+    }
+
+    if (loc.extra_directives && containsSensitiveDirective(loc.extra_directives)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Location directives must not contain credentials or sensitive headers",
+        path: ["extra_directives"],
       });
     }
   });

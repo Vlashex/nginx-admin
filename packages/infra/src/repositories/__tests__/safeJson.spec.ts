@@ -21,4 +21,17 @@ describe("safeJson", () => {
     expect(serialized).not.toContain("privateKey");
     expect(containsSensitiveFieldName(serialized)).toBe(false);
   });
+
+  it("redacts secret-shaped string values before persistence", () => {
+    const serialized = stringifyWithoutSecrets({
+      proxy_pass: "https://user:pw@example.com",
+      header: "Authorization: Bearer abc.def",
+      cookieLine: "Cookie: sid=123",
+    });
+
+    expect(serialized).toContain("[redacted]");
+    expect(serialized).not.toContain("user:pw");
+    expect(serialized).not.toContain("abc.def");
+    expect(serialized).not.toContain("sid=123");
+  });
 });

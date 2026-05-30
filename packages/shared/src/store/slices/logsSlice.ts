@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { LogUseCases } from "@vlashex/core";
+import { redactPotentialSecrets } from "@vlashex/core/security/secrets";
 import type { LogEntry, LogFilters } from "@vlashex/core";
 
 interface LogsState {
@@ -32,13 +33,18 @@ const sanitizeLogContext = (
   return Object.fromEntries(
     Object.entries(context).map(([key, value]) => [
       key,
-      SENSITIVE_KEY_PATTERN.test(key) ? "[redacted]" : value,
+      SENSITIVE_KEY_PATTERN.test(key)
+        ? "[redacted]"
+        : typeof value === "string"
+          ? redactPotentialSecrets(value)
+          : value,
     ])
   );
 };
 
 const sanitizeLog = (log: Omit<LogEntry, "id">): Omit<LogEntry, "id"> => ({
   ...log,
+  message: redactPotentialSecrets(log.message),
   context: sanitizeLogContext(log.context),
 });
 
@@ -75,6 +81,7 @@ export const useLogsStore = create<LogsState & LogsActions>()(
           if (savedLogs) {
             const logs: LogEntry[] = JSON.parse(savedLogs).map((log: LogEntry) => ({
               ...log,
+              message: redactPotentialSecrets(log.message),
               context: sanitizeLogContext(log.context),
             }));
             set({ logs, isLoading: false });

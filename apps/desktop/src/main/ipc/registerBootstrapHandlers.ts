@@ -1,4 +1,5 @@
 import { app, ipcMain } from "electron";
+import { redactPotentialSecrets } from "@vlashex/core/security/secrets";
 import { RemoteExecutionError } from "@vlashex/transport/RemoteExecutor";
 import {
   BOOTSTRAP_CHECK_HOST_CHANNEL,
@@ -27,8 +28,9 @@ type IpcResult<TData> = IpcSuccess<TData> | IpcFailure;
 const DEFAULT_INSTALL_SCRIPT_URL = process.env.NGINX_ADMIN_INSTALL_SCRIPT_URL ?? "https://repo/install.sh";
 const DEFAULT_SERVICE_NAME = process.env.NGINX_ADMIN_SERVICE_NAME ?? "nginx-admin.service";
 const DEFAULT_HEALTH_COMMAND = process.env.NGINX_ADMIN_HEALTHCHECK_COMMAND ?? "nginx-admin status";
-const SECRET_VALUE_PATTERN =
-  /\b(token|secret|password|passphrase|private(?:Key)?|auth|credential|jwt|session)\b\s*[:=]\s*("[^"]*"|'[^']*'|\S+)/giu;
+const DEFAULT_INSTALL_TIMEOUT_MS = 120_000;
+const MIN_INSTALL_TIMEOUT_MS = 5_000;
+const MAX_INSTALL_TIMEOUT_MS = 300_000;
 
 interface BootstrapInstallRequest {
   options: BootstrapInstallOptions;
@@ -115,10 +117,10 @@ export const registerBootstrapHandlers = (executor: SSHExecutor, metadata: HostM
         return { ok: false, error: { message: "Untrusted sender", code: "UNTRUSTED_SENDER" } };
       }
 
-      const timeoutMs = request?.options?.timeoutMs ?? 120_000;
-      const installScriptUrl = request?.options?.installScriptUrl || DEFAULT_INSTALL_SCRIPT_URL;
-      const serviceName = request?.options?.serviceName || DEFAULT_SERVICE_NAME;
-      const healthCommand = request?.options?.healthCommand || DEFAULT_HEALTH_COMMAND;
+      const timeoutMs = normalizeTimeout(request?.options?.timeoutMs);
+      const installScriptUrl = DEFAULT_INSTALL_SCRIPT_URL;
+      const serviceName = DEFAULT_SERVICE_NAME;
+      const healthCommand = DEFAULT_HEALTH_COMMAND;
 
       try {
         await executor.runShell(
@@ -151,7 +153,7 @@ export const registerBootstrapHandlers = (executor: SSHExecutor, metadata: HostM
             },
             health: {
               ok: true,
-              output: healthOutput.trim(),
+              output: redactPotentialSecrets(healthOutput.trim()),
             },
           },
         };
@@ -164,8 +166,12 @@ export const registerBootstrapHandlers = (executor: SSHExecutor, metadata: HostM
 
 const quoteForShell = (value: string): string => `'${value.replace(/'/g, `'\"'\"'`)}'`;
 
-const redactPotentialSecrets = (value: string): string =>
-  value.replace(SECRET_VALUE_PATTERN, (_match, key: string) => `${key}=[redacted]`);
+const normalizeTimeout = (value: unknown): number => {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return DEFAULT_INSTALL_TIMEOUT_MS;
+  }
+  return Math.min(MAX_INSTALL_TIMEOUT_MS, Math.max(MIN_INSTALL_TIMEOUT_MS, Math.trunc(value)));
+};
 
 const isTrustedSender = (frameUrl: string): boolean => {
   if (!frameUrl) {

@@ -1,4 +1,5 @@
 import { app, BrowserWindow } from "electron";
+import { redactPotentialSecrets } from "@vlashex/core/security/secrets";
 import fs from "node:fs";
 import path from "node:path";
 import { registerBootstrapHandlers } from "./ipc/registerBootstrapHandlers.js";
@@ -60,6 +61,15 @@ const clearSecretProcessEnv = (): void => {
     delete process.env[key];
   }
 };
+
+const safeErrorMessage = (error: unknown): string =>
+  redactPotentialSecrets(error instanceof Error ? error.message : String(error));
+
+const safeErrorMeta = (error: unknown): { name?: string; message: string; code?: string } => ({
+  name: error instanceof Error ? error.name : undefined,
+  message: safeErrorMessage(error),
+  code: error instanceof SecretsRepositoryError ? error.code : undefined,
+});
 
 const loadDesktopEnv = (): string | null => {
   const candidates = Array.from(
@@ -128,7 +138,7 @@ const createSshRuntime = async (secretsRepository: KeytarSecretsRepository, envP
       });
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = safeErrorMessage(error);
     const code = error instanceof SecretsRepositoryError ? error.code : "MIGRATION_FAILED";
     console.error(`${SSH_LOG_PREFIX} Secure credential migration failed`, { code, message });
     clearSecretProcessEnv();
@@ -246,7 +256,7 @@ app.whenReady().then(async () => {
     await sshExecutor.checkConnection({ timeoutMs: 7_000 });
     console.info(`${SSH_LOG_PREFIX} Startup SSH health check passed`);
   } catch (error) {
-    console.error(`${SSH_LOG_PREFIX} Startup SSH health check failed`, error);
+    console.error(`${SSH_LOG_PREFIX} Startup SSH health check failed`, safeErrorMeta(error));
   }
 
   app.on("activate", async () => {

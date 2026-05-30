@@ -190,7 +190,10 @@
             },
             "target": {
               "type": "string",
-              "pattern": "^(https?://[^/@?#]+(:[0-9]+)?(/.*)?|http://unix:.+)$"
+              "pattern": "^(https?://[^/@?#]+(:[0-9]+)?(/.*)?|http://unix:.+)$",
+              "not": {
+                "pattern": "([Aa][Uu][Tt][Hh][Oo][Rr][Ii][Zz][Aa][Tt][Ii][Oo][Nn]|[Cc][Oo][Oo][Kk][Ii][Ee]|[Tt][Oo][Kk][Ee][Nn]|[Ss][Ee][Cc][Rr][Ee][Tt]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll]|[Jj][Ww][Tt]|[Ss][Ee][Ss][Ss][Ii][Oo][Nn]|[Bb][Ee][Aa][Rr][Ee][Rr])"
+              }
             }
           }
         },
@@ -227,7 +230,10 @@
               "const": "redirect"
             },
             "url": {
-              "type": "string"
+              "type": "string",
+              "not": {
+                "pattern": "([Aa][Uu][Tt][Hh][Oo][Rr][Ii][Zz][Aa][Tt][Ii][Oo][Nn]|[Cc][Oo][Oo][Kk][Ii][Ee]|[Tt][Oo][Kk][Ee][Nn]|[Ss][Ee][Cc][Rr][Ee][Tt]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll]|[Jj][Ww][Tt]|[Ss][Ee][Ss][Ss][Ii][Oo][Nn]|[Bb][Ee][Aa][Rr][Ee][Rr]|://[^/?#\\s@]+@)"
+              }
             },
             "code": {
               "type": "integer",
@@ -258,7 +264,10 @@
           }
         },
         "value": {
-          "type": "string"
+          "type": "string",
+          "not": {
+            "pattern": "([Aa][Uu][Tt][Hh][Oo][Rr][Ii][Zz][Aa][Tt][Ii][Oo][Nn]|[Cc][Oo][Oo][Kk][Ii][Ee]|[Tt][Oo][Kk][Ee][Nn]|[Ss][Ee][Cc][Rr][Ee][Tt]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll]|[Jj][Ww][Tt]|[Ss][Ee][Ss][Ss][Ii][Oo][Nn]|[Bb][Ee][Aa][Rr][Ee][Rr])"
+          }
         }
       }
     },

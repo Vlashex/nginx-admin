@@ -72,7 +72,7 @@ export function useRoutesPage() {
         toast.success("Маршрут создан");
       } else {
         const { id, ...rest } = values;
-        await routeOps.update(id, RouteSchema.parse(rest));
+        await routeOps.update(id, RouteSchema.parse({ ...rest, id }));
         toast.success("Изменения сохранены");
       }
       closeModal();
@@ -89,11 +89,11 @@ export function useRoutesPage() {
       await delay(3000);
       const values = form.getValues();
       if (uiStore.mode === "create" || !values.id) {
-        await routeOps.create(values as Route);
+        await routeOps.create(RouteSchema.parse(values));
         toast.success("Маршрут создан");
       } else {
         const { id, ...rest } = values;
-        await routeOps.update(id, rest as Route);
+        await routeOps.update(id, RouteSchema.parse({ ...rest, id }));
         toast.success("Изменения сохранены");
       }
       closeModal();
@@ -218,6 +218,12 @@ export function useRoutesPage() {
       setIsSavingLocation(true);
       try {
         await delay(3000);
+        const errors = validateLocation(value);
+        if (Object.keys(errors).length > 0) {
+          toast.error("Invalid location configuration");
+          return;
+        }
+
         const current = form.getValues("locations") as LocationConfig[];
         const next =
           uiStore.locationEditing.index === null

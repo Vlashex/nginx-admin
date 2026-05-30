@@ -1,3 +1,4 @@
+import { redactPotentialSecrets } from "@vlashex/core/security/secrets";
 import {
   type HostSecrets,
   normalizeHostSecrets,
@@ -23,7 +24,7 @@ const mapKeytarError = (error: unknown, fallbackMessage: string): SecretsReposit
     return error;
   }
 
-  const message = error instanceof Error ? error.message : String(error);
+  const message = redactPotentialSecrets(error instanceof Error ? error.message : String(error));
   const normalized = message.toLowerCase();
   const code = normalized.includes("denied") || normalized.includes("access")
     ? "ACCESS_DENIED"

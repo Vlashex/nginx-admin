@@ -1,4 +1,8 @@
 import { Client, type ConnectConfig } from "ssh2";
+import {
+  redactPotentialSecrets,
+  sanitizeForJson,
+} from "@vlashex/core/security/secrets";
 import { RemoteExecutionError } from "@vlashex/transport/RemoteExecutor";
 
 export interface SSHConnectionManagerOptions {
@@ -131,9 +135,9 @@ export class SSHConnectionManager {
           return;
         }
         settled = true;
-        this.log("error", "SSH connection failed", { message: error.message });
+        this.log("error", "SSH connection failed", { message: redactPotentialSecrets(error.message) });
         cleanup();
-        reject(new RemoteExecutionError(error.message, CONNECT_FAILED_CODE));
+        reject(new RemoteExecutionError(redactPotentialSecrets(error.message), CONNECT_FAILED_CODE));
       };
 
       if (signal?.aborted) {
@@ -194,6 +198,6 @@ export class SSHConnectionManager {
       return;
     }
 
-    console[level](`${this.logPrefix} ${message}`, meta);
+    console[level](`${this.logPrefix} ${message}`, sanitizeForJson(meta));
   }
 }

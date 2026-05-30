@@ -1,5 +1,6 @@
 // core/useCases/routes.ts
 import type { Route } from "../entities/types";
+import { RouteSchema } from "../entities/types";
 import type { RouteRepository } from "../repositories/RouteRepository";
 import {
   validateDomain,
@@ -35,6 +36,7 @@ export const createRoute = async (
     },
   };
 
+  RouteSchema.parse(route);
   await repository.save(route);
   return id;
 };
@@ -60,6 +62,7 @@ export const updateRoute = async (
       : undefined,
   };
 
+  RouteSchema.parse(updatedRoute);
   await repository.save(updatedRoute);
 };
 
